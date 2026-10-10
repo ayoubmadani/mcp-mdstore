@@ -5,6 +5,8 @@ import { CreateProductTool } from '../tools/create-product.tool';
 import { CreateStoreTool } from '../tools/create-store.tool';
 import { ListStoresTool } from '../tools/list-stores.tool';
 import { ImportProductFromLinkTool } from '../tools/import-product-from-link.tool';
+import { ManageProductsTool } from '../tools/manage-products.tool';
+import { ManageStoreTool } from '../tools/manage-store.tool';
 
 @Injectable()
 export class McpService {
@@ -14,6 +16,8 @@ export class McpService {
     private readonly createStore: CreateStoreTool,
     private readonly createLandingPage: CreateLandingPageTool,
     private readonly importProductFromLink: ImportProductFromLinkTool,
+    private readonly manageProducts: ManageProductsTool,
+    private readonly manageStore: ManageStoreTool,
   ) {}
 
   // خادم جديد لكل طلب (stateless) — المفتاح يعيش فقط طوال هذا الطلب.
@@ -24,6 +28,8 @@ export class McpService {
     this.createStore.register(server, apiKey);
     this.createLandingPage.register(server, apiKey);
     this.importProductFromLink.register(server, apiKey);
+    this.manageProducts.register(server, apiKey);
+    this.manageStore.register(server, apiKey);
     return server;
   }
 }

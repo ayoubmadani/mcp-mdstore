@@ -6,6 +6,11 @@ export const MDSTORE_ROUTES = {
   importAliexpressProduct: (storeId: string) =>
     `/stores/${encodeURIComponent(storeId)}/products/import-aliexpress`,
   listStores: () => '/stores/user/me',
+  store: (storeId: string) => `/stores/${encodeURIComponent(storeId)}`,
+  products: (storeId: string) => `/stores/${encodeURIComponent(storeId)}/products`,
+  product: (storeId: string, productId: string) =>
+    `/stores/${encodeURIComponent(storeId)}/products/${encodeURIComponent(productId)}`,
+  storeLandingPages: (storeId: string) => `/builder-pages/store/${encodeURIComponent(storeId)}`,
   createStore: () => '/stores/create-full',
   createBuilderPage: () => '/builder-pages',
   updateBuilderPageTree: (pageId: string) =>
