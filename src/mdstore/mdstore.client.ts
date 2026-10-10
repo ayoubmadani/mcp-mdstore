@@ -8,6 +8,7 @@ import { MDSTORE_ROUTES } from './mdstore.routes';
 export class MdstoreApiError extends Error {}
 
 export interface CreateProductInput {
+  categoryId?: string;
   name: string;
   price: number;
   stock?: number;
@@ -23,7 +24,17 @@ export interface ImportProductInput {
   language?: string;
 }
 
+export interface CategoryInput {
+  name?: string;
+  description?: string;
+  imageUrl?: string;
+  parentId?: string | null;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
 export interface UpdateProductInput {
+  categoryId?: string | null;
   name?: string;
   price?: number;
   originalPrice?: number;
@@ -87,6 +98,7 @@ export class MdstoreClient {
       stock: input.stock,
       images: input.images,
       desc: input.description,
+      categoryId: input.categoryId,
       // مطلوبان في CreateProductDto حتى لمنتج بدون متغيرات.
       attributes: [],
       variantDetails: [],
@@ -120,6 +132,7 @@ export class MdstoreClient {
       desc: input.description,
       isActive: input.isActive,
       images: input.images,
+      categoryId: input.categoryId,
     }));
   }
 
@@ -157,6 +170,34 @@ export class MdstoreClient {
     if (Object.keys(contact).length) body.contact = contact;
     await this.request(apiKey, 'PATCH', MDSTORE_ROUTES.store(storeId), body);
     return this.getStore(apiKey, storeId);
+  }
+
+  // شجرة التصنيفات مسطّحة (مع المستوى والأب) — مختصرة
+  async listCategories(apiKey: string, storeId: string) {
+    const res = await this.request<any>(apiKey, 'GET', MDSTORE_ROUTES.categories(storeId));
+    const roots: any[] = res?.data ?? (Array.isArray(res) ? res : []);
+    const out: any[] = [];
+    const walk = (nodes: any[], level: number) => {
+      for (const c of nodes ?? []) {
+        out.push({ id: c.id, name: c.name, parentId: c.parentId ?? null, level, isActive: c.isActive });
+        walk(c.children, level + 1);
+      }
+    };
+    walk(roots, 0);
+    return out;
+  }
+
+  createCategory(apiKey: string, storeId: string, input: CategoryInput & { name: string }) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.categories(storeId), defined({ ...input }));
+  }
+
+  updateCategory(apiKey: string, storeId: string, categoryId: string, input: CategoryInput) {
+    return this.request(apiKey, 'PATCH', MDSTORE_ROUTES.category(storeId, categoryId), defined({ ...input }));
+  }
+
+  // حذف ناعم (مع التصنيفات الفرعية) — يمكن الاسترجاع من لوحة التحكم
+  deleteCategory(apiKey: string, storeId: string, categoryId: string) {
+    return this.request(apiKey, 'DELETE', MDSTORE_ROUTES.category(storeId, categoryId));
   }
 
   async listLandingPages(apiKey: string, storeId: string) {

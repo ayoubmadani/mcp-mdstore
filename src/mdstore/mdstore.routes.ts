@@ -10,6 +10,9 @@ export const MDSTORE_ROUTES = {
   products: (storeId: string) => `/stores/${encodeURIComponent(storeId)}/products`,
   product: (storeId: string, productId: string) =>
     `/stores/${encodeURIComponent(storeId)}/products/${encodeURIComponent(productId)}`,
+  categories: (storeId: string) => `/stores/${encodeURIComponent(storeId)}/categories`,
+  category: (storeId: string, categoryId: string) =>
+    `/stores/${encodeURIComponent(storeId)}/categories/${encodeURIComponent(categoryId)}`,
   storeLandingPages: (storeId: string) => `/builder-pages/store/${encodeURIComponent(storeId)}`,
   createStore: () => '/stores/create-full',
   createBuilderPage: () => '/builder-pages',

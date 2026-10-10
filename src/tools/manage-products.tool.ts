@@ -41,6 +41,7 @@ export class ManageProductsTool {
           description: z.string().optional().describe('الوصف (HTML مسموح)'),
           isActive: z.boolean().optional().describe('ظاهر في المتجر أم لا'),
           images: z.array(z.string().url()).optional().describe('روابط الصور (تستبدل الصور الحالية)'),
+          categoryId: z.string().uuid().nullable().optional().describe('التصنيف (من list_categories)، null لإزالته'),
         },
       },
       ({ storeId, productId, ...input }) =>

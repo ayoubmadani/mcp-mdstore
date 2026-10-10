@@ -21,6 +21,7 @@ export class CreateProductTool {
           stock: z.number().int().min(0).optional().describe('الكمية المتوفرة في المخزون'),
           images: z.array(z.string().url()).optional().describe('روابط صور المنتج'),
           description: z.string().optional().describe('وصف المنتج'),
+          categoryId: z.string().uuid().optional().describe('التصنيف (من list_categories)'),
         },
       },
       ({ storeId, ...input }) =>

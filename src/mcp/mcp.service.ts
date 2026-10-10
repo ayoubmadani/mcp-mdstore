@@ -7,6 +7,7 @@ import { ListStoresTool } from '../tools/list-stores.tool';
 import { ImportProductFromLinkTool } from '../tools/import-product-from-link.tool';
 import { ManageProductsTool } from '../tools/manage-products.tool';
 import { ManageStoreTool } from '../tools/manage-store.tool';
+import { ManageCategoriesTool } from '../tools/manage-categories.tool';
 
 @Injectable()
 export class McpService {
@@ -18,6 +19,7 @@ export class McpService {
     private readonly importProductFromLink: ImportProductFromLinkTool,
     private readonly manageProducts: ManageProductsTool,
     private readonly manageStore: ManageStoreTool,
+    private readonly manageCategories: ManageCategoriesTool,
   ) {}
 
   // خادم جديد لكل طلب (stateless) — المفتاح يعيش فقط طوال هذا الطلب.
@@ -30,6 +32,7 @@ export class McpService {
     this.importProductFromLink.register(server, apiKey);
     this.manageProducts.register(server, apiKey);
     this.manageStore.register(server, apiKey);
+    this.manageCategories.register(server, apiKey);
     return server;
   }
 }
