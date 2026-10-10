@@ -15,12 +15,18 @@ export type RequestWithApiKey = Request & { mdstoreApiKey: string };
 export class ApiKeyGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<RequestWithApiKey>();
-    const [scheme, headerKey] = (req.headers.authorization ?? '').split(' ');
-    const pathKey = (req.params as Record<string, string> | undefined)?.key;
-    // ترويسة api-key / x-api-key (اختيار جاهز في موصلات claude.ai)
-    const rawApiKey = req.headers['api-key'] ?? req.headers['x-api-key'];
-    const apiKeyHeader = (Array.isArray(rawApiKey) ? rawApiKey[0] : rawApiKey)?.trim();
-    const key = (scheme === 'Bearer' && headerKey) || apiKeyHeader || pathKey;
+    // نقبل المفتاح من أي مصدر وبأي صيغة: «Bearer mdk_…» أو «mdk_…» وحده،
+    // في authorization أو api-key أو x-api-key، أو في الرابط /mcp/<المفتاح>
+    const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? '';
+    const candidates = [
+      first(req.headers.authorization),
+      first(req.headers['api-key']),
+      first(req.headers['x-api-key']),
+      (req.params as Record<string, string> | undefined)?.key ?? '',
+    ];
+    const key = candidates
+      .map((v) => v.trim().replace(/^Bearer\s+/i, '').trim())
+      .find((v) => v.length > 0);
 
     if (!key) {
       throw new UnauthorizedException(
