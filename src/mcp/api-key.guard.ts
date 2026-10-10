@@ -24,9 +24,10 @@ export class ApiKeyGuard implements CanActivate {
       first(req.headers['x-api-key']),
       (req.params as Record<string, string> | undefined)?.key ?? '',
     ];
-    const key = candidates
-      .map((v) => v.trim().replace(/^Bearer\s+/i, '').trim())
-      .find((v) => v.length > 0);
+    const cleaned = candidates.map((v) => v.trim().replace(/^Bearer\s+/i, '').trim());
+    // مفتاح MdStore يبدأ بـ mdk_ — نفضّله على أي قيمة أخرى (claude.ai قد يرسل
+    // ترويسة Authorization خاصة به إلى جانب ترويسة api-key)
+    const key = cleaned.find((v) => v.startsWith('mdk_')) ?? cleaned.find((v) => v.length > 0);
 
     if (!key) {
       throw new UnauthorizedException(
