@@ -8,7 +8,7 @@ import { McpService } from './mcp.service';
 export class McpController {
   constructor(private readonly mcpService: McpService) {}
 
-  @Post()
+  @Post(['', ':key'])
   @UseGuards(ApiKeyGuard)
   async handle(@Req() req: RequestWithApiKey, @Res() res: Response) {
     const server = this.mcpService.createServer(req.mdstoreApiKey);
@@ -27,12 +27,12 @@ export class McpController {
 
   // بدون جلسات لا يوجد بث SSE ولا جلسة تُحذف. مواصفة MCP تطلب 405 هنا —
   // أما 404 فيفهمها العميل على أنها جلسة منتهية، فيعلق.
-  @Get()
+  @Get(['', ':key'])
   get(@Res() res: Response) {
     methodNotAllowed(res);
   }
 
-  @Delete()
+  @Delete(['', ':key'])
   delete(@Res() res: Response) {
     methodNotAllowed(res);
   }

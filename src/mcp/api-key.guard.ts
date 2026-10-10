@@ -8,17 +8,20 @@ import type { Request } from 'express';
 
 export type RequestWithApiKey = Request & { mdstoreApiKey: string };
 
-// يقرأ مفتاح MdStore من ترويسة Authorization ويضعه في الطلب ليصل إلى
-// الأدوات. لا يتحقق من صلاحيته — md-store-api هي من تقرر ذلك.
+// يقرأ مفتاح MdStore من ترويسة Authorization، أو من الرابط نفسه (/mcp/<المفتاح>)
+// لأن موصلات claude.ai المخصصة لا تسمح بترويسات — فقط رابط (أو OAuth).
+// لا يتحقق من صلاحيته — md-store-api هي من تقرر ذلك.
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<RequestWithApiKey>();
-    const [scheme, key] = (req.headers.authorization ?? '').split(' ');
+    const [scheme, headerKey] = (req.headers.authorization ?? '').split(' ');
+    const pathKey = (req.params as Record<string, string> | undefined)?.key;
+    const key = scheme === 'Bearer' && headerKey ? headerKey : pathKey;
 
-    if (scheme !== 'Bearer' || !key) {
+    if (!key) {
       throw new UnauthorizedException(
-        'مفتاح API مفقود. أضف الترويسة: Authorization: Bearer <المفتاح> — يمكنك توليد المفتاح من لوحة تحكم MdStore.',
+        'مفتاح API مفقود. استعمل الرابط https://<الخادم>/mcp/<المفتاح> أو الترويسة Authorization: Bearer <المفتاح> — ولّد المفتاح من لوحة تحكم MdStore.',
       );
     }
 
