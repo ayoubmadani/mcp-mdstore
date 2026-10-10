@@ -206,6 +206,11 @@ export class MdstoreClient {
     return items.map((p) => ({ id: p.id, name: p.name, productId: p.productId, isPublished: p.isPublished ?? p.status }));
   }
 
+  // يسجّل في المنصة أن ذكاءً اصطناعياً (Claude / ChatGPT…) ارتبط بهذا المفتاح
+  markConnected(apiKey: string, client: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.apiKeyConnection(), { client });
+  }
+
   listStores(apiKey: string) {
     return this.request(apiKey, 'GET', MDSTORE_ROUTES.listStores());
   }

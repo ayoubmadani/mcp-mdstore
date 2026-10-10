@@ -6,6 +6,7 @@ export const MDSTORE_ROUTES = {
   importAliexpressProduct: (storeId: string) =>
     `/stores/${encodeURIComponent(storeId)}/products/import-aliexpress`,
   listStores: () => '/stores/user/me',
+  apiKeyConnection: () => '/api-keys/connection',
   store: (storeId: string) => `/stores/${encodeURIComponent(storeId)}`,
   products: (storeId: string) => `/stores/${encodeURIComponent(storeId)}/products`,
   product: (storeId: string, productId: string) =>
