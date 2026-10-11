@@ -5,6 +5,8 @@ import { ImportProductFromLinkTool } from '../tools/import-product-from-link.too
 import { ManageProductsTool } from '../tools/manage-products.tool';
 import { ManageStoreTool } from '../tools/manage-store.tool';
 import { ManageCategoriesTool } from '../tools/manage-categories.tool';
+import { GenerateProductImagesTool } from '../tools/generate-product-images.tool';
+import { ManageDomainsTool } from '../tools/manage-domains.tool';
 import { CreateProductTool } from '../tools/create-product.tool';
 import { CreateStoreTool } from '../tools/create-store.tool';
 import { ListStoresTool } from '../tools/list-stores.tool';
@@ -24,6 +26,8 @@ import { McpService } from './mcp.service';
     ManageProductsTool,
     ManageStoreTool,
     ManageCategoriesTool,
+    GenerateProductImagesTool,
+    ManageDomainsTool,
   ],
 })
 export class McpModule {}

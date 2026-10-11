@@ -206,9 +206,61 @@ export class MdstoreClient {
     return items.map((p) => ({ id: p.id, name: p.name, productId: p.productId, isPublished: p.isPublished ?? p.status }));
   }
 
+  async listDomains(apiKey: string, storeId: string) {
+    const res = await this.request<any>(apiKey, 'GET', MDSTORE_ROUTES.storeDomains(storeId));
+    const items: any[] = res?.data ?? (Array.isArray(res) ? res : []);
+    return items.map((d) => ({
+      id: d.id, domain: d.domain, isActive: d.isActive, isSub: d.isSub,
+      scope: d.scope, builderPageId: d.builderPageId ?? null,
+    }));
+  }
+
+  // دومين فرعي (xxx.mdstore.top) يعمل فوراً؛ الدومين الخارجي يحتاج سجلات DNS نرجعها معه
+  async addDomain(
+    apiKey: string,
+    input: { storeId: string; domain: string; builderPageId?: string },
+  ) {
+    const created = await this.request<any>(apiKey, 'POST', MDSTORE_ROUTES.createDomain(), defined({
+      storeId: input.storeId,
+      domain: input.domain,
+      scope: input.builderPageId ? 'landing_page' : undefined,
+      builderPageId: input.builderPageId,
+    }));
+    if (created?.isSub) return created;
+    const dns = await this.request<any>(apiKey, 'GET', MDSTORE_ROUTES.domainDnsInstructions(created.domain));
+    return { ...created, dns };
+  }
+
+  checkDomainStatus(apiKey: string, domainId: string) {
+    return this.request(apiKey, 'PATCH', MDSTORE_ROUTES.syncDomain(domainId));
+  }
+
+  async deleteDomain(apiKey: string, storeId: string, domainId: string) {
+    await this.request(apiKey, 'POST', MDSTORE_ROUTES.deleteDomain(domainId), { storeId });
+    return { deleted: true, domainId };
+  }
+
+  assignDomainToPage(apiKey: string, storeId: string, domainId: string, builderPageId: string) {
+    return this.request(apiKey, 'PATCH', MDSTORE_ROUTES.assignDomainPage(domainId), { storeId, builderPageId });
+  }
+
+  unassignDomainFromPage(apiKey: string, storeId: string, domainId: string) {
+    return this.request(apiKey, 'PATCH', MDSTORE_ROUTES.unassignDomainPage(domainId), { storeId });
+  }
+
   // يسجّل في المنصة أن ذكاءً اصطناعياً (Claude / ChatGPT…) ارتبط بهذا المفتاح
   markConnected(apiKey: string, client: string) {
     return this.request(apiKey, 'POST', MDSTORE_ROUTES.apiKeyConnection(), { client });
+  }
+
+  // صور منتج بالذكاء الاصطناعي (Higgsfield) — تُحفظ في تخزين المنصة وتُضاف للمنتج
+  generateProductImages(
+    apiKey: string,
+    storeId: string,
+    productId: string,
+    input: { prompt?: string; count?: number; aspectRatio?: string; addToProduct?: boolean },
+  ) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.productAiImages(storeId, productId), input);
   }
 
   listStores(apiKey: string) {

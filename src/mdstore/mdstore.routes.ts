@@ -14,7 +14,16 @@ export const MDSTORE_ROUTES = {
   categories: (storeId: string) => `/stores/${encodeURIComponent(storeId)}/categories`,
   category: (storeId: string, categoryId: string) =>
     `/stores/${encodeURIComponent(storeId)}/categories/${encodeURIComponent(categoryId)}`,
+  productAiImages: (storeId: string, productId: string) =>
+    `/stores/${encodeURIComponent(storeId)}/products/${encodeURIComponent(productId)}/ai-images`,
   storeLandingPages: (storeId: string) => `/builder-pages/store/${encodeURIComponent(storeId)}`,
+  storeDomains: (storeId: string) => `/domain/store/${encodeURIComponent(storeId)}`,
+  createDomain: () => '/domain',
+  domainDnsInstructions: (domain: string) => `/domain/setup-instructions/${encodeURIComponent(domain)}`,
+  syncDomain: (domainId: string) => `/domain/sync/${encodeURIComponent(domainId)}`,
+  deleteDomain: (domainId: string) => `/domain/delete/${encodeURIComponent(domainId)}`,
+  assignDomainPage: (domainId: string) => `/domain/${encodeURIComponent(domainId)}/assign-page`,
+  unassignDomainPage: (domainId: string) => `/domain/${encodeURIComponent(domainId)}/unassign-page`,
   createStore: () => '/stores/create-full',
   createBuilderPage: () => '/builder-pages',
   updateBuilderPageTree: (pageId: string) =>

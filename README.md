@@ -23,6 +23,13 @@
 | `create_category` | إنشاء تصنيف (أو تصنيف فرعي بـ parentId) |
 | `update_category` | تعديل تصنيف: الاسم، الوصف، الصورة، الأب، الظهور |
 | `delete_category` | حذف تصنيف مع فروعه (قابل للاسترجاع) |
+| `list_domains` | عرض دومينات متجر وحالتها |
+| `add_domain` | ربط دومين فرعي (xxx.mdstore.top، فوري) أو خارجي (يُرجع سجلات DNS)، اختيارياً لصفحة هبوط واحدة |
+| `check_domain_status` | فحص ربط دومين خارجي (DNS والتحقق) وتحديث حالته |
+| `delete_domain` | حذف دومين نهائياً |
+| `assign_domain_to_landing_page` | تخصيص دومين لصفحة هبوط واحدة |
+| `unassign_domain_from_landing_page` | إعادة الدومين ليعرض المتجر كاملاً |
+| `generate_product_images` | توليد صور منتج احترافية بالذكاء الاصطناعي (Higgsfield) من صورته الأصلية، تُحفظ وتُضاف للمنتج |
 
 ## المصادقة
 
