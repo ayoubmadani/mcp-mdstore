@@ -391,6 +391,11 @@ export class MdstoreClient {
     return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminThemeTypes(), { name, pin, challenge_token: challengeToken });
   }
 
+  // كود ثيم TSX (ملف واحد يستورد من @mdstore/theme-kit) — الخادم يفحصه ويبنيه ويرفعه
+  adminPublishThemeCode(apiKey: string, slug: string, code: string, pin: string, challengeToken: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminPublishThemeCode(), { slug, code, pin, challenge_token: challengeToken });
+  }
+
   adminCreateTheme(apiKey: string, theme: AdminThemeInput, pin: string, challengeToken: string) {
     return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminCreateTheme(), {
       pin,

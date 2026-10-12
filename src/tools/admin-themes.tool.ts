@@ -31,6 +31,40 @@ export class AdminThemesTool {
     );
 
     server.registerTool(
+      'admin_request_pin',
+      {
+        title: 'طلب تحدّي PIN (أدمن)',
+        description:
+          'يرجع أسماء الرموز (مثل ZZMMHH) و challenge_token لعملية أدمن واحدة. استعمله قبل admin_publish_theme_code ' +
+          '(حتى لا يُرسل الكود الكبير مرتين). اطلب الـ PIN من المستخدم — لا تخمّنه. صالح 5 دقائق ولعملية واحدة.',
+        inputSchema: {},
+      },
+      () => toToolResult(() => this.mdstore.adminPinChallenge(apiKey)),
+    );
+
+    server.registerTool(
+      'admin_publish_theme_code',
+      {
+        title: 'رفع كود ثيم (أدمن)',
+        description:
+          'يرفع كود ثيم: ملف TSX واحد كامل يتبع skill «mdstore-theme-creator» — يستورد فقط من react و next/link و next/navigation ' +
+          'و axios و lucide-react و isomorphic-dompurify و @mdstore/theme-kit (لا @/ ولا ملفات أخرى)، ويصدّر default و Home و Details ' +
+          'و Cart و StaticPage (و Success اختياري). الخادم يفحص الاستيرادات والـ exports، يبنيه، ويرفعه إلى themes/<slug>.js — ' +
+          'وإن فشل يرجع الخطأ ورقم السطر فأصلحه وأعد الرفع (بتحدٍّ جديد). الـ slug يجب أن يكون لثيم موجود (admin_create_theme). ' +
+          'خطوات: admin_request_pin ← اطلب الـ PIN من المستخدم ← هذه الأداة مع pin و challenge_token. ' +
+          'لا تكتب الكود في رد المحادثة — مرّره هنا مباشرة.',
+        inputSchema: {
+          slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).describe('slug الثيم (موجود مسبقاً)'),
+          code: z.string().min(200).max(600_000).describe('كود TSX الكامل للثيم'),
+          pin: z.string().regex(/^\d{6}$/).describe('رمز PIN من 6 أرقام يعطيه المستخدم'),
+          challenge_token: z.string().describe('من admin_request_pin'),
+        },
+      },
+      ({ slug, code, pin, challenge_token }) =>
+        toToolResult(() => this.mdstore.adminPublishThemeCode(apiKey, slug, code, pin, challenge_token)),
+    );
+
+    server.registerTool(
       'admin_create_theme_type',
       {
         title: 'إنشاء نوع ثيم (أدمن)',

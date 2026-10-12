@@ -38,6 +38,7 @@ export const MDSTORE_ROUTES = {
   adminPinChallenge: () => '/admin-mcp/pin-challenge',
   adminThemeTypes: () => '/admin-mcp/theme-types',
   adminCreateTheme: () => '/admin-mcp/themes',
+  adminPublishThemeCode: () => '/admin-mcp/theme-code',
   applyTheme: () => '/theme/apply',
   createStore: () => '/stores/create-full',
   createBuilderPage: () => '/builder-pages',
