@@ -396,6 +396,27 @@ export class MdstoreClient {
     return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminPublishThemeCode(), { slug, code, pin, challenge_token: challengeToken });
   }
 
+  adminListThemes(apiKey: string, search?: string) {
+    const qs = search?.trim() ? `?search=${encodeURIComponent(search.trim())}` : '';
+    return this.request(apiKey, 'GET', `${MDSTORE_ROUTES.adminThemes()}${qs}`);
+  }
+
+  adminUpdateTheme(apiKey: string, themeId: string, changes: { price?: number; isActive?: boolean }, pin: string, challengeToken: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminUpdateTheme(themeId), defined({ ...changes, pin, challenge_token: challengeToken }));
+  }
+
+  adminListPlans(apiKey: string) {
+    return this.request(apiKey, 'GET', MDSTORE_ROUTES.adminPlans());
+  }
+
+  adminUpdatePlan(apiKey: string, planId: string, changes: Record<string, unknown>, pin: string, challengeToken: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminUpdatePlan(planId), defined({ ...changes, pin, challenge_token: challengeToken }));
+  }
+
+  adminSetPlanThemes(apiKey: string, planId: string, action: 'add' | 'remove', themeIds: string[], pin: string, challengeToken: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminPlanThemes(planId), { action, themeIds, pin, challenge_token: challengeToken });
+  }
+
   adminCreateTheme(apiKey: string, theme: AdminThemeInput, pin: string, challengeToken: string) {
     return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminCreateTheme(), {
       pin,

@@ -13,6 +13,14 @@ const slugify = (name: string) => {
   return base.endsWith('-theme') || base === 'theme' ? base : `${base}-theme`;
 };
 
+const PIN_FIELDS = {
+  pin: z.string().regex(/^\d{6}$/).optional().describe('رمز PIN من 6 أرقام يعطيه المستخدم لهذا التحدّي'),
+  challenge_token: z.string().optional().describe('التوكن الذي أرجعته الأداة في الاستدعاء الأول'),
+};
+const PIN_HELP =
+  'يحتاج PIN جديداً: استدعِ الأداة أولاً بدون pin و challenge_token فترجع أسماء الرموز؛ اعرض التغيير على المستخدم ' +
+  'واطلب الـ PIN (لا تخمّنه)، ثم أعد الاستدعاء بنفس البيانات مع pin و challenge_token.';
+
 @Injectable()
 export class AdminThemesTool {
   constructor(private readonly mdstore: MdstoreClient) {}
@@ -28,6 +36,113 @@ export class AdminThemesTool {
         inputSchema: {},
       },
       () => toToolResult(() => this.mdstore.adminListThemeTypes(apiKey)),
+    );
+
+    // خطوتان: بدون PIN ← تحدٍّ (والتغيير المطلوب للعرض)، ومع PIN ← تنفيذ
+    const withPin = (tool: string, preview: unknown, pin: string | undefined, token: string | undefined, run: (pin: string, token: string) => Promise<unknown>) =>
+      toToolResult(async () => {
+        if (!pin || !token) {
+          const { label, challenge_token } = await this.mdstore.adminPinChallenge(apiKey);
+          return {
+            status: 'pin_required',
+            change: preview,
+            challenge: label,
+            challenge_token,
+            instructions: `اعرض التغيير على المستخدم واطلب رمز PIN للتحدّي ${label} (6 أرقام)، ثم أعد استدعاء ${tool} بنفس البيانات مع pin و challenge_token. صالح 5 دقائق.`,
+          };
+        }
+        return run(pin, token);
+      });
+
+    server.registerTool(
+      'admin_list_themes',
+      {
+        title: 'كل الثيمات (أدمن)',
+        description: 'يعرض كل الثيمات حتى غير المفعّلة: id، slug، الاسم، السعر، مفعّل أم لا، النوع، والخطط التي تشمله. استعمله لإيجاد themeId.',
+        inputSchema: { search: z.string().optional().describe('بحث بالاسم (3 لغات) أو slug') },
+      },
+      ({ search }) => toToolResult(() => this.mdstore.adminListThemes(apiKey, search)),
+    );
+
+    server.registerTool(
+      'admin_update_theme',
+      {
+        title: 'تعديل سعر/تفعيل ثيم (أدمن)',
+        description: 'يغيّر سعر شراء ثيم (دج، 0 = مجاني) و/أو يفعّله أو يعطّله في معرض الثيمات. ' + PIN_HELP,
+        inputSchema: {
+          themeId: z.string().uuid().describe('من admin_list_themes'),
+          price: z.number().min(0).optional().describe('السعر الجديد (دج)'),
+          isActive: z.boolean().optional().describe('true لإظهاره في المعرض، false لإخفائه'),
+          ...PIN_FIELDS,
+        },
+      },
+      ({ themeId, price, isActive, pin, challenge_token }) =>
+        withPin('admin_update_theme', { themeId, price, isActive }, pin, challenge_token,
+          (p, t) => this.mdstore.adminUpdateTheme(apiKey, themeId, { price, isActive }, p, t)),
+    );
+
+    server.registerTool(
+      'admin_list_plans',
+      {
+        title: 'خطط الاشتراك (أدمن)',
+        description: 'يعرض خطط الاشتراك: id، الاسم، السعر الشهري والسنوي، مفعّلة أم لا، والحدود (features).',
+        inputSchema: {},
+      },
+      () => toToolResult(() => this.mdstore.adminListPlans(apiKey)),
+    );
+
+    server.registerTool(
+      'admin_update_plan',
+      {
+        title: 'تعديل خطة (أدمن)',
+        description:
+          'يعدّل خطة اشتراك: الأسعار، التفعيل، و/أو الحدود. features جزئية — يُغيَّر فقط ما تمرّره ' +
+          '(storeNumber، productNumber، productImagesNumber، totalImagesNumber، landingPageNumber، domainNumber، ' +
+          'pixelFacebookNumber، pixelTiktokNumber، isNtfy، commission). يؤثر على كل المشتركين في الخطة. ' + PIN_HELP,
+        inputSchema: {
+          planId: z.string().uuid().describe('من admin_list_plans'),
+          monthlyPrice: z.number().min(0).optional(),
+          yearlyPrice: z.number().min(0).optional(),
+          isActive: z.boolean().optional(),
+          features: z
+            .object({
+              storeNumber: z.number().int().min(0).optional(),
+              productNumber: z.number().int().min(0).optional(),
+              productImagesNumber: z.number().int().min(0).optional(),
+              totalImagesNumber: z.number().int().min(0).optional(),
+              landingPageNumber: z.number().int().min(0).optional(),
+              domainNumber: z.number().int().min(0).optional(),
+              pixelFacebookNumber: z.number().int().min(0).optional(),
+              pixelTiktokNumber: z.number().int().min(0).optional(),
+              isNtfy: z.boolean().optional(),
+              commission: z.number().min(0).optional(),
+            })
+            .optional(),
+          ...PIN_FIELDS,
+        },
+      },
+      ({ planId, pin, challenge_token, ...changes }) =>
+        withPin('admin_update_plan', { planId, ...changes }, pin, challenge_token,
+          (p, t) => this.mdstore.adminUpdatePlan(apiKey, planId, changes, p, t)),
+    );
+
+    server.registerTool(
+      'admin_set_plan_themes',
+      {
+        title: 'إضافة/إزالة ثيمات من خطة (أدمن)',
+        description:
+          'يضيف ثيمات إلى خطة (يصبح متاحاً مجاناً لكل مشتركيها) أو يزيلها منها. ثيمات custom و testing لا تظهر للتجار حتى لو أُضيفت. ' +
+          'النتيجة لكل ثيم ok أو error. ' + PIN_HELP,
+        inputSchema: {
+          planId: z.string().uuid().describe('من admin_list_plans'),
+          action: z.enum(['add', 'remove']),
+          themeIds: z.array(z.string().uuid()).min(1).max(100).describe('من admin_list_themes'),
+          ...PIN_FIELDS,
+        },
+      },
+      ({ planId, action, themeIds, pin, challenge_token }) =>
+        withPin('admin_set_plan_themes', { planId, action, themeIds }, pin, challenge_token,
+          (p, t) => this.mdstore.adminSetPlanThemes(apiKey, planId, action, themeIds, p, t)),
     );
 
     server.registerTool(

@@ -47,6 +47,11 @@
 |---|---|
 | `admin_list_theme_types` | أنواع الثيمات (لاختيار typeId)، مع تمييز الأنواع المخفية عن التجار |
 | `admin_create_theme_type` | إنشاء نوع ثيم جديد (مثل Food & Restaurants) |
+| `admin_list_themes` | كل الثيمات (حتى غير المفعّلة) مع السعر والخطط |
+| `admin_update_theme` | تغيير سعر ثيم و/أو تفعيله (PIN) |
+| `admin_list_plans` | خطط الاشتراك وأسعارها وحدودها |
+| `admin_update_plan` | تعديل أسعار خطة وتفعيلها وحدودها (PIN) |
+| `admin_set_plan_themes` | إضافة ثيمات إلى خطة أو إزالتها (PIN) |
 | `admin_request_pin` | تحدّي PIN لعملية أدمن واحدة (قبل رفع الكود) |
 | `admin_publish_theme_code` | رفع كود ثيم TSX (ملف واحد يستعمل `@mdstore/theme-kit`): يُفحص ويُبنى ويُرفع، وإلا يرجع الخطأ ورقم السطر |
 | `admin_create_theme` | إنشاء سجل ثيم: Claude يصنع الأسماء والأوصاف (3 لغات) والـ slug والوسوم والصورة من فكرة القالب (غير مفعّل حتى يُرفع ملفه) |
