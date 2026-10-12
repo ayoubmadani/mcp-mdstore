@@ -12,6 +12,10 @@ import { GenerateProductImagesTool } from '../tools/generate-product-images.tool
 import { ManageDomainsTool } from '../tools/manage-domains.tool';
 import { ManageThemesTool } from '../tools/manage-themes.tool';
 import { ManageShippingTool } from '../tools/manage-shipping.tool';
+import { AdminThemesTool } from '../tools/admin-themes.tool';
+
+// مفتاح مدير المنصة — يرى أدوات الأدمن فقط، ومفتاح التاجر (mdk_) لا يراها أبداً
+export const isAdminKey = (apiKey: string) => apiKey.startsWith('mdsa_');
 
 @Injectable()
 export class McpService {
@@ -28,11 +32,16 @@ export class McpService {
     private readonly manageDomains: ManageDomainsTool,
     private readonly manageThemes: ManageThemesTool,
     private readonly manageShipping: ManageShippingTool,
+    private readonly adminThemes: AdminThemesTool,
   ) {}
 
   // خادم جديد لكل طلب (stateless) — المفتاح يعيش فقط طوال هذا الطلب.
   createServer(apiKey: string): McpServer {
     const server = new McpServer({ name: 'mdstore', version: '0.0.1' });
+    if (isAdminKey(apiKey)) {
+      this.adminThemes.register(server, apiKey);
+      return server;
+    }
     this.createProduct.register(server, apiKey);
     this.listStores.register(server, apiKey);
     this.createStore.register(server, apiKey);

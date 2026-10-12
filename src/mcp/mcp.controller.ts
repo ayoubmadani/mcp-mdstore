@@ -2,7 +2,7 @@ import { Controller, Delete, Get, Post, Req, Res, UseGuards } from '@nestjs/comm
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { Response } from 'express';
 import { ApiKeyGuard, type RequestWithApiKey } from './api-key.guard';
-import { McpService } from './mcp.service';
+import { McpService, isAdminKey } from './mcp.service';
 import { MdstoreClient } from '../mdstore/mdstore.client';
 
 @Controller('mcp')
@@ -17,7 +17,7 @@ export class McpController {
   async handle(@Req() req: RequestWithApiKey, @Res() res: Response) {
     // بداية الربط: نسجّل اسم العميل (claude-ai، ChatGPT…) على المفتاح — فشل التسجيل لا يوقف الربط
     const body = req.body as { method?: string; params?: { clientInfo?: { name?: string; version?: string } } };
-    if (body?.method === 'initialize') {
+    if (body?.method === 'initialize' && !isAdminKey(req.mdstoreApiKey)) {
       const info = body.params?.clientInfo;
       const client = [info?.name, info?.version].filter(Boolean).join(' ') || 'mcp';
       await this.mdstore.markConnected(req.mdstoreApiKey, client).catch(() => undefined);

@@ -32,6 +32,12 @@ export const MDSTORE_ROUTES = {
   assignDomainPage: (domainId: string) => `/domain/${encodeURIComponent(domainId)}/assign-page`,
   unassignDomainPage: (domainId: string) => `/domain/${encodeURIComponent(domainId)}/unassign-page`,
   availableThemes: () => '/theme/available',
+  // معرض الثيمات العام (المفعّلة وغير المخفية) — للاقتراح على التاجر
+  themeCatalog: () => '/theme?limit=200',
+  // أدوات مدير المنصة — بمفتاح mdsa_ فقط، والتعديل بـ PIN في كل عملية
+  adminPinChallenge: () => '/admin-mcp/pin-challenge',
+  adminThemeTypes: () => '/admin-mcp/theme-types',
+  adminCreateTheme: () => '/admin-mcp/themes',
   applyTheme: () => '/theme/apply',
   createStore: () => '/stores/create-full',
   createBuilderPage: () => '/builder-pages',

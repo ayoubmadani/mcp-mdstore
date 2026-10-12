@@ -9,6 +9,7 @@ import { GenerateProductImagesTool } from '../tools/generate-product-images.tool
 import { ManageDomainsTool } from '../tools/manage-domains.tool';
 import { ManageThemesTool } from '../tools/manage-themes.tool';
 import { ManageShippingTool } from '../tools/manage-shipping.tool';
+import { AdminThemesTool } from '../tools/admin-themes.tool';
 import { CreateProductTool } from '../tools/create-product.tool';
 import { CreateStoreTool } from '../tools/create-store.tool';
 import { ListStoresTool } from '../tools/list-stores.tool';
@@ -32,6 +33,7 @@ import { McpService } from './mcp.service';
     ManageDomainsTool,
     ManageThemesTool,
     ManageShippingTool,
+    AdminThemesTool,
   ],
 })
 export class McpModule {}

@@ -23,6 +23,20 @@ export interface ShippingPriceInput {
   isActive?: boolean;
 }
 
+export interface AdminThemeInput {
+  name_en: string;
+  name_ar: string;
+  name_fr: string;
+  slug: string;
+  price: number;
+  desc_en: string;
+  desc_ar: string;
+  desc_fr: string;
+  imageUrl: string;
+  tag?: string[];
+  typeId: string;
+}
+
 export interface CreateProductInput {
   addons?: ProductAddonInput[];
   categoryId?: string;
@@ -85,10 +99,31 @@ const toAddons = (addons?: ProductAddonInput[]) =>
     isActive: a.isActive ?? true,
   }));
 
+// أنواع ثيمات لا تُقترح ولا تُطبَّق للتجار (مطابقة لـ HIDDEN_TYPE_NAMES في md-store-api)
+const HIDDEN_THEME_TYPES = ['custom', 'testing'];
+
 const defined = (o: Record<string, unknown>) =>
   Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
 
+export interface StoreCategorySeed {
+  name: string;
+  imageUrl?: string;
+}
+
+export interface StoreProductSeed {
+  name: string;
+  price: number;
+  originalPrice?: number;
+  description?: string;
+  images?: string[];
+  category?: string;
+  stock?: number;
+  addons?: ProductAddonInput[];
+}
+
 export interface CreateStoreInput {
+  categories?: StoreCategorySeed[];
+  products?: StoreProductSeed[];
   name: string;
   subdomain: string;
   language?: string;
@@ -118,10 +153,12 @@ export interface CreateLandingPageInput {
 export class MdstoreClient {
   constructor(private readonly http: HttpService) {}
 
-  createProduct(apiKey: string, storeId: string, input: CreateProductInput) {
+  createProduct(apiKey: string, storeId: string, input: CreateProductInput & { originalPrice?: number; importExternalImages?: boolean }) {
     return this.request(apiKey, 'POST', MDSTORE_ROUTES.createProduct(storeId), {
       name: input.name,
       price: input.price,
+      priceOriginal: input.originalPrice,
+      importExternalImages: input.importExternalImages,
       stock: input.stock,
       images: input.images,
       desc: input.description,
@@ -239,7 +276,7 @@ export class MdstoreClient {
   async listAvailableThemes(apiKey: string, language = 'ar') {
     const items = await this.request<any[]>(apiKey, 'GET', MDSTORE_ROUTES.availableThemes());
     const lang = ['ar', 'fr', 'en'].includes(language) ? language : 'ar';
-    return (items ?? []).map((t) => ({
+    return (items ?? []).filter((t) => !HIDDEN_THEME_TYPES.includes(t.type)).map((t) => ({
       id: t.id,
       slug: t.slug,
       name: t.name?.[lang] || t.name?.en,
@@ -248,6 +285,37 @@ export class MdstoreClient {
       type: t.type,
       source: t.source, // owned = اشتراه، plan = ضمن خطته
     }));
+  }
+
+  // كل ثيمات المعرض مع حالة كل ثيم للتاجر: available = يملكه أو ضمن خطته (يُطبَّق مباشرة)،
+  // وإلا يحتاج شراءه (price) من صفحة القوالب أو ترقية الخطة
+  async browseThemeCatalog(apiKey: string, language = 'ar', search?: string) {
+    const lang = ['ar', 'fr', 'en'].includes(language) ? language : 'ar';
+    const [catalog, available] = await Promise.all([
+      this.request<any>(apiKey, 'GET', MDSTORE_ROUTES.themeCatalog()),
+      this.request<any[]>(apiKey, 'GET', MDSTORE_ROUTES.availableThemes()).catch(() => []),
+    ]);
+    const owned = new Map(
+      (available ?? []).filter((t: any) => !HIDDEN_THEME_TYPES.includes(t.type)).map((t: any) => [t.id, t.source]),
+    );
+    const q = search?.trim().toLowerCase();
+    const rows: any[] = catalog?.data ?? (Array.isArray(catalog) ? catalog : []);
+    return rows
+      // مفعّل فقط، ولا أنواع مخفية (custom، testing) — حتى لو أرجعها الخادم
+      .filter((t) => t.isActive !== false && !HIDDEN_THEME_TYPES.includes(t.type?.name))
+      .map((t) => ({
+        id: t.id,
+        slug: t.slug,
+        name: t[`name_${lang}`] || t.name_ar || t.name_en,
+        description: t[`desc_${lang}`] || t.desc_ar || t.desc_en,
+        tags: t.tag ?? [],
+        type: t.type?.name ?? null,
+        price: Number(t.price ?? 0),
+        imageUrl: t.imageUrl,
+        available: owned.has(t.id),
+        source: owned.get(t.id) ?? null,
+      }))
+      .filter((t) => !q || [t.name, t.description, t.slug, t.type, ...t.tags].join(' ').toLowerCase().includes(q));
   }
 
   applyTheme(apiKey: string, storeId: string, themeId: string) {
@@ -307,6 +375,30 @@ export class MdstoreClient {
     return this.getShippingPrices(apiKey, profileId);
   }
 
+  /* مدير المنصة (مفتاح mdsa_) */
+
+  // أسماء الرموز المطلوبة (مثل ZZMMHH) + توكن التحدّي — صالح 5 دقائق ولعملية واحدة
+  adminPinChallenge(apiKey: string) {
+    return this.request<{ label: string; challenge_token: string }>(apiKey, 'POST', MDSTORE_ROUTES.adminPinChallenge());
+  }
+
+  async adminListThemeTypes(apiKey: string) {
+    const rows = await this.request<any[]>(apiKey, 'GET', MDSTORE_ROUTES.adminThemeTypes());
+    return (rows ?? []).map((t) => ({ id: t.id, name: t.name, hidden: !!t.hidden }));
+  }
+
+  adminCreateThemeType(apiKey: string, name: string, pin: string, challengeToken: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminThemeTypes(), { name, pin, challenge_token: challengeToken });
+  }
+
+  adminCreateTheme(apiKey: string, theme: AdminThemeInput, pin: string, challengeToken: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminCreateTheme(), {
+      pin,
+      challenge_token: challengeToken,
+      theme,
+    });
+  }
+
   // دومين فرعي (xxx.mdstore.top) يعمل فوراً؛ الدومين الخارجي يحتاج سجلات DNS نرجعها معه
   async addDomain(
     apiKey: string,
@@ -360,16 +452,74 @@ export class MdstoreClient {
   }
 
   // المتجر يُنشأ أولاً ثم يُطبَّق الثيم — فشل الثيم لا يلغي المتجر، يُرجَع مع الخطأ
+  // متجر بلا محتوى تجريبي + ثيم + تصنيفات ومنتجات خاصة بنشاطه (صورها تُحفظ في تخزين المنصة).
+  // فشل عنصر (مثلاً حد الخطة) لا يوقف الباقي — يُذكر في النتيجة.
   async createStore(apiKey: string, input: CreateStoreInput) {
     const created = await this.createStoreOnly(apiKey, input);
-    const storeId = created?.data?.id ?? created?.id;
-    if (!input.themeId || !storeId) return created;
-    try {
-      const applied = await this.applyTheme(apiKey, storeId, input.themeId);
-      return { ...created, theme: (applied as any)?.theme ?? applied };
-    } catch (err) {
-      return { ...created, themeError: err instanceof Error ? err.message : String(err) };
+    const storeId: string | undefined = created?.data?.id ?? created?.id;
+    if (!storeId) return created;
+    const result: Record<string, unknown> = { ...created };
+    const errMsg = (err: unknown) => (err instanceof Error ? err.message : String(err));
+
+    if (input.themeId) {
+      try {
+        const applied = await this.applyTheme(apiKey, storeId, input.themeId);
+        result.theme = (applied as any)?.theme ?? applied;
+      } catch (err) {
+        result.themeError = errMsg(err);
+      }
     }
+
+    // نسخة API قديمة تتجاهل skipDemoContent: نحذف المحتوى التجريبي بأنفسنا
+    try {
+      const [cats, prods] = await Promise.all([
+        this.listCategories(apiKey, storeId),
+        this.listProducts(apiKey, storeId),
+      ]);
+      await Promise.all([
+        ...prods.products.map((p) => this.deleteProduct(apiKey, storeId, p.id).catch(() => undefined)),
+        ...cats.filter((c) => c.level === 0).map((c) => this.deleteCategory(apiKey, storeId, c.id).catch(() => undefined)),
+      ]);
+    } catch {
+      /* المتجر أُنشئ — التنظيف ليس ضرورياً لنجاحه */
+    }
+
+    const categoryIds = new Map<string, string>();
+    const categories: unknown[] = [];
+    for (const c of input.categories ?? []) {
+      try {
+        const res = await this.request<any>(apiKey, 'POST', MDSTORE_ROUTES.categories(storeId), defined({ name: c.name, imageUrl: c.imageUrl }));
+        const id = res?.data?.id ?? res?.id;
+        if (id) categoryIds.set(c.name.trim().toLowerCase(), id);
+        categories.push({ name: c.name, id });
+      } catch (err) {
+        categories.push({ name: c.name, error: errMsg(err) });
+      }
+    }
+
+    const products: unknown[] = [];
+    for (const p of input.products ?? []) {
+      try {
+        const res = await this.createProduct(apiKey, storeId, {
+          name: p.name,
+          price: p.price,
+          originalPrice: p.originalPrice,
+          description: p.description,
+          images: p.images,
+          stock: p.stock ?? 100,
+          addons: p.addons,
+          categoryId: p.category ? categoryIds.get(p.category.trim().toLowerCase()) : undefined,
+          importExternalImages: true,
+        });
+        products.push({ name: p.name, id: (res as any)?.id ?? (res as any)?.data?.id });
+      } catch (err) {
+        products.push({ name: p.name, error: errMsg(err) });
+      }
+    }
+
+    if (input.categories?.length) result.categories = categories;
+    if (input.products?.length) result.products = products;
+    return result;
   }
 
   private createStoreOnly(apiKey: string, input: CreateStoreInput) {
@@ -382,6 +532,8 @@ export class MdstoreClient {
         language: input.language,
         currency: input.currency,
         cart: input.cart,
+        // بدون منتجات وتصنيفات تجريبية — المحتوى الحقيقي يُنشأ بعد المتجر
+        skipDemoContent: true,
       }),
       // الحقول غير المحددة تُحذف لتأخذ القيم الافتراضية في CreateFullStoreDto
       design: clean(input.design),

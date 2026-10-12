@@ -26,6 +26,23 @@ export class ManageThemesTool {
     );
 
     server.registerTool(
+      'browse_theme_catalog',
+      {
+        title: 'تصفح معرض الثيمات',
+        description:
+          'يعرض كل ثيمات المنصة (الاسم، الوصف، الوسوم، النوع، السعر، الصورة) مع available: هل يستطيع المستخدم تطبيقه الآن. ' +
+          'استعمله عندما لا يجد في list_available_themes ثيماً يناسب نشاط المتجر: اقترح على المستخدم 2 إلى 3 ثيمات ' +
+          'تناسب نشاطه بالضبط (بالاسم والسعر وسبب الاقتراح)، واذكر أنه يستطيع شراءها من صفحة «القوالب» في لوحة التحكم ' +
+          'أو ترقية خطته، ثم طبّقها بـ apply_theme بعد أن تصبح متاحة. لا يشتري هذا الأداة أي شيء.',
+        inputSchema: {
+          language: z.enum(['ar', 'fr', 'en']).optional().describe('لغة الأسماء والأوصاف (الافتراضي ar)'),
+          search: z.string().optional().describe('كلمة للتصفية (اسم، وسم، نوع) مثل food أو pizza'),
+        },
+      },
+      ({ language, search }) => toToolResult(() => this.mdstore.browseThemeCatalog(apiKey, language, search)),
+    );
+
+    server.registerTool(
       'apply_theme',
       {
         title: 'تطبيق ثيم على متجر',
