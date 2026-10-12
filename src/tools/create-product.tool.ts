@@ -22,6 +22,18 @@ export class CreateProductTool {
           images: z.array(z.string().url()).optional().describe('روابط صور المنتج'),
           description: z.string().optional().describe('وصف المنتج'),
           categoryId: z.string().uuid().optional().describe('التصنيف (من list_categories)'),
+          addons: z
+            .array(
+              z.object({
+                id: z.string().optional().describe('معرّف الإضافة — مرّره لإبقاء إضافة موجودة، واتركه لإضافة جديدة'),
+                name: z.string().min(1).max(100).describe('اسم الإضافة، مثل: جبن إضافي'),
+                price: z.number().min(0).describe('السعر الذي يُضاف لسعر المنتج (0 = مجاناً)'),
+                isActive: z.boolean().optional().describe('ظاهرة للزبون (الافتراضي true)'),
+              }),
+            )
+            .max(30)
+            .optional()
+            .describe('إضافات يختارها الزبون مع المنتج ويُضاف سعرها (مثلاً: صلصة حارة +0، دجاج إضافي +300) — مناسبة للمطاعم'),
         },
       },
       ({ storeId, ...input }) =>

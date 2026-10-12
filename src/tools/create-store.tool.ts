@@ -24,6 +24,8 @@ export class CreateStoreTool {
           '(2) اختر لوناً أساسياً وثانوياً متناسقين مع النشاط والصورة. ' +
           '(3) اكتب عنوان هيرو قصيراً جذاباً ووصفاً من سطر واحد بلغة المتجر. ' +
           '(4) نص شريط علوي قصير (مثل التوصيل/الدفع عند الاستلام). ' +
+          '(5) قبل الإنشاء استدعِ list_available_themes، واختر الثيم الأقرب لنشاط المتجر حسب الوصف والوسوم ومرّر themeId؛ ' +
+          'إذا لم يوجد ثيم مناسب أو القائمة فارغة فاترك themeId ليأخذ الثيم الافتراضي. اذكر للمستخدم الثيم الذي اخترته. ' +
           'اللغة الافتراضية العربية والعملة DZD ما لم يطلب المستخدم غير ذلك.',
         inputSchema: {
           name: z.string().min(1).describe('اسم المتجر'),
@@ -37,6 +39,7 @@ export class CreateStoreTool {
           heroSubtitle: z.string().max(250).optional().describe('وصف الهيرو'),
           topBarText: z.string().max(120).optional().describe('نص الشريط العلوي'),
           cart: z.boolean().optional().describe('تفعيل السلة (الافتراضي حسب المنصة)'),
+          themeId: z.string().uuid().optional().describe('معرّف الثيم الأقرب للنشاط (من list_available_themes)'),
         },
       },
       (input) =>
@@ -52,6 +55,7 @@ export class CreateStoreTool {
             topBar: input.topBarText
               ? { enabled: true, text: input.topBarText, color: input.primaryColor }
               : {},
+            themeId: input.themeId,
           }),
         ),
     );

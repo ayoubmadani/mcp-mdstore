@@ -15,7 +15,8 @@ export class ManageDomainsTool {
       {
         title: 'عرض الدومينات',
         description:
-          'يعرض دومينات متجر: الاسم، مفعّل أم لا، فرعي (mdstore.top) أم خارجي، ونطاقه (store للمتجر كله أو landing_page لصفحة هبوط واحدة).',
+          'يعرض دومينات متجر: الاسم، مفعّل أم لا، فرعي (mdstore.top) أم خارجي، ونطاقه (store للمتجر كله أو landing_page لصفحة هبوط واحدة)، ' +
+          'مع حدّ الخطة (limit) والعدد المستعمل (used) — كل دومينات المتجر تُحسب معاً.',
         inputSchema: { storeId: z.string().uuid().describe('معرّف المتجر') },
       },
       ({ storeId }) => toToolResult(() => this.mdstore.listDomains(apiKey, storeId)),
@@ -26,7 +27,8 @@ export class ManageDomainsTool {
       {
         title: 'إضافة دومين',
         description:
-          'يربط دوميناً بمتجر. دومين فرعي بصيغة name.mdstore.top يعمل فوراً (3 كحد أقصى لكل متجر). ' +
+          'يربط دوميناً بمتجر. دومين فرعي بصيغة name.mdstore.top يعمل فوراً. ' +
+          'عدد الدومينات لكل متجر (فرعية وخاصة معاً) محدود بخطة التاجر — راجع limit/used في list_domains. ' +
           'دومين خارجي (مثل mystore.com) يُرجع سجلات DNS التي يجب أن يضعها المستخدم عند مزوّد الدومين، ' +
           'ثم يُفحص بـ check_domain_status. مرّر builderPageId لتخصيص الدومين كاملاً لصفحة هبوط واحدة.',
         inputSchema: {

@@ -42,6 +42,18 @@ export class ManageProductsTool {
           isActive: z.boolean().optional().describe('ظاهر في المتجر أم لا'),
           images: z.array(z.string().url()).optional().describe('روابط الصور (تستبدل الصور الحالية)'),
           categoryId: z.string().uuid().nullable().optional().describe('التصنيف (من list_categories)، null لإزالته'),
+          addons: z
+            .array(
+              z.object({
+                id: z.string().optional().describe('معرّف الإضافة — مرّره لإبقاء إضافة موجودة، واتركه لإضافة جديدة'),
+                name: z.string().min(1).max(100).describe('اسم الإضافة، مثل: جبن إضافي'),
+                price: z.number().min(0).describe('السعر الذي يُضاف لسعر المنتج (0 = مجاناً)'),
+                isActive: z.boolean().optional().describe('ظاهرة للزبون (الافتراضي true)'),
+              }),
+            )
+            .max(30)
+            .optional()
+            .describe('قائمة الإضافات الكاملة (تستبدل الحالية) — [] لحذفها كلها'),
         },
       },
       ({ storeId, productId, ...input }) =>

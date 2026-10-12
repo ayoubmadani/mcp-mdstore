@@ -10,6 +10,8 @@ import { ManageStoreTool } from '../tools/manage-store.tool';
 import { ManageCategoriesTool } from '../tools/manage-categories.tool';
 import { GenerateProductImagesTool } from '../tools/generate-product-images.tool';
 import { ManageDomainsTool } from '../tools/manage-domains.tool';
+import { ManageThemesTool } from '../tools/manage-themes.tool';
+import { ManageShippingTool } from '../tools/manage-shipping.tool';
 
 @Injectable()
 export class McpService {
@@ -24,6 +26,8 @@ export class McpService {
     private readonly manageCategories: ManageCategoriesTool,
     private readonly generateProductImages: GenerateProductImagesTool,
     private readonly manageDomains: ManageDomainsTool,
+    private readonly manageThemes: ManageThemesTool,
+    private readonly manageShipping: ManageShippingTool,
   ) {}
 
   // خادم جديد لكل طلب (stateless) — المفتاح يعيش فقط طوال هذا الطلب.
@@ -39,6 +43,8 @@ export class McpService {
     this.manageCategories.register(server, apiKey);
     this.generateProductImages.register(server, apiKey);
     this.manageDomains.register(server, apiKey);
+    this.manageThemes.register(server, apiKey);
+    this.manageShipping.register(server, apiKey);
     return server;
   }
 }

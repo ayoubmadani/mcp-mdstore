@@ -7,7 +7,24 @@ import { MDSTORE_ROUTES } from './mdstore.routes';
 // خطأ أرجعته md-store-api — `message` هي رسالتها كما هي بدون تغيير.
 export class MdstoreApiError extends Error {}
 
+// إضافة اختيارية للمنتج (مثلاً: جبن إضافي +100) — id يُولَّد إن لم يُعطَ، ومرّره لإبقاء إضافة موجودة
+export interface ProductAddonInput {
+  id?: string;
+  name: string;
+  price: number;
+  isActive?: boolean;
+}
+
+export interface ShippingPriceInput {
+  wilayaId: number;
+  priceHome?: number;
+  priceOffice?: number;
+  priceReturn?: number;
+  isActive?: boolean;
+}
+
 export interface CreateProductInput {
+  addons?: ProductAddonInput[];
   categoryId?: string;
   name: string;
   price: number;
@@ -34,6 +51,7 @@ export interface CategoryInput {
 }
 
 export interface UpdateProductInput {
+  addons?: ProductAddonInput[];
   categoryId?: string | null;
   name?: string;
   price?: number;
@@ -59,6 +77,14 @@ export interface UpdateStoreInput {
   email?: string;
 }
 
+const toAddons = (addons?: ProductAddonInput[]) =>
+  addons?.map((a, i) => ({
+    id: a.id ?? `ad-${Date.now().toString(36)}-${i}`,
+    name: a.name,
+    price: a.price,
+    isActive: a.isActive ?? true,
+  }));
+
 const defined = (o: Record<string, unknown>) =>
   Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
 
@@ -71,6 +97,7 @@ export interface CreateStoreInput {
   design?: { primaryColor?: string; secondaryColor?: string };
   hero?: { imageUrl?: string; title?: string; subtitle?: string };
   topBar?: { enabled?: boolean; text?: string; color?: string };
+  themeId?: string;
 }
 
 export interface PageNode {
@@ -99,6 +126,7 @@ export class MdstoreClient {
       images: input.images,
       desc: input.description,
       categoryId: input.categoryId,
+      addons: toAddons(input.addons),
       // مطلوبان في CreateProductDto حتى لمنتج بدون متغيرات.
       attributes: [],
       variantDetails: [],
@@ -133,6 +161,7 @@ export class MdstoreClient {
       isActive: input.isActive,
       images: input.images,
       categoryId: input.categoryId,
+      addons: toAddons(input.addons),
     }));
   }
 
@@ -206,13 +235,76 @@ export class MdstoreClient {
     return items.map((p) => ({ id: p.id, name: p.name, productId: p.productId, isPublished: p.isPublished ?? p.status }));
   }
 
-  async listDomains(apiKey: string, storeId: string) {
-    const res = await this.request<any>(apiKey, 'GET', MDSTORE_ROUTES.storeDomains(storeId));
-    const items: any[] = res?.data ?? (Array.isArray(res) ? res : []);
-    return items.map((d) => ({
-      id: d.id, domain: d.domain, isActive: d.isActive, isSub: d.isSub,
-      scope: d.scope, builderPageId: d.builderPageId ?? null,
+  // ثيمات التاجر المشتراة + ثيمات خطته — مختصرة (الوصف بلغة واحدة) لاختيار الأقرب للنشاط
+  async listAvailableThemes(apiKey: string, language = 'ar') {
+    const items = await this.request<any[]>(apiKey, 'GET', MDSTORE_ROUTES.availableThemes());
+    const lang = ['ar', 'fr', 'en'].includes(language) ? language : 'ar';
+    return (items ?? []).map((t) => ({
+      id: t.id,
+      slug: t.slug,
+      name: t.name?.[lang] || t.name?.en,
+      description: t.description?.[lang] || t.description?.en,
+      tags: t.tags,
+      type: t.type,
+      source: t.source, // owned = اشتراه، plan = ضمن خطته
     }));
+  }
+
+  applyTheme(apiKey: string, storeId: string, themeId: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.applyTheme(), { storeId, themeId });
+  }
+
+  // الدومينات + حدّ الخطة (كل دومينات المتجر، فرعية وخاصة، للمتجر ولصفحات الهبوط، تُحسب معاً)
+  async listDomains(apiKey: string, storeId: string) {
+    const [res, usage] = await Promise.all([
+      this.request<any>(apiKey, 'GET', MDSTORE_ROUTES.storeDomains(storeId)),
+      // نسخة API قديمة بلا هذا المسار: نعرض الدومينات بدون الحد
+      this.request<{ limit: number; used: number }>(apiKey, 'GET', MDSTORE_ROUTES.domainLimit(storeId)).catch(() => null),
+    ]);
+    const items: any[] = res?.data ?? (Array.isArray(res) ? res : []);
+    return {
+      limit: usage?.limit,
+      used: usage?.used ?? items.length,
+      domains: items.map((d) => ({
+        id: d.id, domain: d.domain, isActive: d.isActive, isSub: d.isSub,
+        scope: d.scope, builderPageId: d.builderPageId ?? null,
+      })),
+    };
+  }
+
+  // حسابات الشحن: لكل حساب أسعاره وولاياته، وكل متجر يستعمل حساباً (الافتراضي إن لم يُختر)
+  listShippingProfiles(apiKey: string) {
+    return this.request(apiKey, 'GET', MDSTORE_ROUTES.shippingProfiles());
+  }
+
+  createShippingProfile(apiKey: string, name: string, copyFromId?: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.shippingProfiles(), defined({ name, copyFromId }));
+  }
+
+  setStoreShippingProfile(apiKey: string, storeId: string, profileId: string | null) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.storeShippingProfile(), { storeId, profileId });
+  }
+
+  // أسعار حساب (الافتراضي إن لم يُحدَّد)؛ إن لم تكن له أسعار بعد تُنشأ كل الولايات بسعر 0
+  async getShippingPrices(apiKey: string, profileId?: string) {
+    const qs = profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
+    let rows = await this.request<any[]>(apiKey, 'GET', `${MDSTORE_ROUTES.shippingPrices()}${qs}`);
+    if (!rows?.length) rows = await this.request<any[]>(apiKey, 'GET', `${MDSTORE_ROUTES.initShippingPrices()}${qs}`);
+    return (rows ?? []).map((w) => ({
+      wilayaId: w.id, name: w.name, ar_name: w.ar_name,
+      priceHome: Number(w.livraisonHome), priceOffice: Number(w.livraisonOfice),
+      priceReturn: Number(w.livraisonReturn), isActive: w.isActive,
+    }));
+  }
+
+  async updateShippingPrices(apiKey: string, prices: ShippingPriceInput[], profileId?: string) {
+    const qs = profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
+    // الولايات المحذوفة من الحساب تُضاف أولاً (بسعر 0) حتى يمكن تحديث سعرها
+    await this.request(apiKey, 'POST', `${MDSTORE_ROUTES.addMissingWilayas()}${qs}`, {
+      wilayaIds: prices.map((p) => p.wilayaId),
+    });
+    await this.request(apiKey, 'POST', `${MDSTORE_ROUTES.updateShippingPrices()}${qs}`, prices);
+    return this.getShippingPrices(apiKey, profileId);
   }
 
   // دومين فرعي (xxx.mdstore.top) يعمل فوراً؛ الدومين الخارجي يحتاج سجلات DNS نرجعها معه
@@ -267,10 +359,23 @@ export class MdstoreClient {
     return this.request(apiKey, 'GET', MDSTORE_ROUTES.listStores());
   }
 
-  createStore(apiKey: string, input: CreateStoreInput) {
+  // المتجر يُنشأ أولاً ثم يُطبَّق الثيم — فشل الثيم لا يلغي المتجر، يُرجَع مع الخطأ
+  async createStore(apiKey: string, input: CreateStoreInput) {
+    const created = await this.createStoreOnly(apiKey, input);
+    const storeId = created?.data?.id ?? created?.id;
+    if (!input.themeId || !storeId) return created;
+    try {
+      const applied = await this.applyTheme(apiKey, storeId, input.themeId);
+      return { ...created, theme: (applied as any)?.theme ?? applied };
+    } catch (err) {
+      return { ...created, themeError: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
+  private createStoreOnly(apiKey: string, input: CreateStoreInput) {
     const clean = <T extends object>(o?: T) =>
       Object.fromEntries(Object.entries(o ?? {}).filter(([, v]) => v !== undefined && v !== ''));
-    return this.request(apiKey, 'POST', MDSTORE_ROUTES.createStore(), {
+    return this.request<any>(apiKey, 'POST', MDSTORE_ROUTES.createStore(), {
       store: clean({
         name: input.name,
         subdomain: input.subdomain,
