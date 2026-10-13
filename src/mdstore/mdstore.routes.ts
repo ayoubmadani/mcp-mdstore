@@ -8,6 +8,7 @@ export const MDSTORE_ROUTES = {
   listStores: () => '/stores/user/me',
   apiKeyConnection: () => '/api-keys/connection',
   store: (storeId: string) => `/stores/${encodeURIComponent(storeId)}`,
+  storeSeo: (storeId: string) => `/stores/${encodeURIComponent(storeId)}/seo`,
   products: (storeId: string) => `/stores/${encodeURIComponent(storeId)}/products`,
   product: (storeId: string, productId: string) =>
     `/stores/${encodeURIComponent(storeId)}/products/${encodeURIComponent(productId)}`,

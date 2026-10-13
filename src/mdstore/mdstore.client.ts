@@ -21,6 +21,8 @@ export interface ShippingPriceInput {
   priceOffice?: number;
   priceReturn?: number;
   isActive?: boolean;
+  homeEnabled?: boolean;
+  officeEnabled?: boolean;
 }
 
 export interface AdminThemeInput {
@@ -89,6 +91,16 @@ export interface UpdateStoreInput {
   phone?: string;
   whatsapp?: string;
   email?: string;
+}
+
+export interface StoreSeoInput {
+  metaTitle?: string;
+  metaDescription?: string;
+  keywords?: string;
+  ogImageUrl?: string;
+  googleVerification?: string;
+  bingVerification?: string;
+  allowIndexing?: boolean;
 }
 
 const toAddons = (addons?: ProductAddonInput[]) =>
@@ -238,6 +250,18 @@ export class MdstoreClient {
     return this.getStore(apiKey, storeId);
   }
 
+  // SEO المتجر (عنوان/وصف Google، صورة المشاركة، رموز التحقق، الفهرسة)
+  async getStoreSeo(apiKey: string, storeId: string) {
+    const s = await this.request<any>(apiKey, 'GET', MDSTORE_ROUTES.storeSeo(storeId));
+    return seoView(s);
+  }
+
+  // نص فارغ "" يحذف القيمة؛ الحقول غير المرسلة تبقى كما هي
+  async updateStoreSeo(apiKey: string, storeId: string, input: StoreSeoInput) {
+    const s = await this.request<any>(apiKey, 'PUT', MDSTORE_ROUTES.storeSeo(storeId), defined({ ...input }));
+    return seoView(s);
+  }
+
   // شجرة التصنيفات مسطّحة (مع المستوى والأب) — مختصرة
   async listCategories(apiKey: string, storeId: string) {
     const res = await this.request<any>(apiKey, 'GET', MDSTORE_ROUTES.categories(storeId));
@@ -362,6 +386,7 @@ export class MdstoreClient {
       wilayaId: w.id, name: w.name, ar_name: w.ar_name,
       priceHome: Number(w.livraisonHome), priceOffice: Number(w.livraisonOfice),
       priceReturn: Number(w.livraisonReturn), isActive: w.isActive,
+      homeEnabled: w.homeEnabled !== false, officeEnabled: w.officeEnabled !== false,
     }));
   }
 
@@ -621,3 +646,13 @@ function extractApiMessage(err: unknown): string {
   }
   return err instanceof Error ? err.message : String(err);
 }
+
+const seoView = (s: any) => ({
+  metaTitle: s?.metaTitle ?? null,
+  metaDescription: s?.metaDescription ?? null,
+  keywords: s?.keywords ?? null,
+  ogImageUrl: s?.ogImageUrl ?? null,
+  googleVerification: s?.googleVerification ?? null,
+  bingVerification: s?.bingVerification ?? null,
+  allowIndexing: s?.allowIndexing !== false,
+});

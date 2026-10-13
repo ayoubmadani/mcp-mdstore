@@ -55,7 +55,7 @@ export class ManageShippingTool {
       {
         title: 'عرض أسعار التوصيل',
         description:
-          'يعرض أسعار التوصيل لكل ولاية في حساب شحن (للمنزل، للمكتب، الإرجاع، ومفعّلة أم لا). ' +
+          'يعرض أسعار التوصيل لكل ولاية في حساب شحن (للمنزل، للمكتب، الإرجاع، مفعّلة أم لا، وأنواع التوصيل المتاحة homeEnabled/officeEnabled). ' +
           'بدون profileId = الحساب الافتراضي.',
         inputSchema: {
           profileId: z.string().uuid().optional().describe('معرّف حساب الشحن (من list_shipping_profiles)'),
@@ -81,6 +81,8 @@ export class ManageShippingTool {
                 priceOffice: z.number().min(0).optional().describe('سعر التوصيل للمكتب (دج)'),
                 priceReturn: z.number().min(0).optional().describe('تكلفة الإرجاع (دج)'),
                 isActive: z.boolean().optional().describe('التوصيل متاح لهذه الولاية'),
+                homeEnabled: z.boolean().optional().describe('التوصيل للمنزل متاح (false = مكتب فقط)'),
+                officeEnabled: z.boolean().optional().describe('التوصيل للمكتب متاح (false = منزل فقط)'),
               }),
             )
             .min(1)

@@ -49,6 +49,41 @@ export class ManageStoreTool {
     );
 
     server.registerTool(
+      'get_store_seo',
+      {
+        title: 'عرض SEO المتجر',
+        description: 'يعرض إعدادات SEO لمتجر: عنوان ووصف Google، الكلمات المفتاحية، صورة المشاركة، رموز تحقق Google/Bing، والسماح بالفهرسة. القيمة null = يُستعمل الافتراضي (اسم المتجر، نص الهيرو، صورة الهيرو).',
+        inputSchema: { storeId: z.string().uuid().describe('معرّف المتجر') },
+      },
+      ({ storeId }) => toToolResult(() => this.mdstore.getStoreSeo(apiKey, storeId)),
+    );
+
+    server.registerTool(
+      'update_store_seo',
+      {
+        title: 'تعديل SEO المتجر',
+        description:
+          'يعدّل SEO متجر (كيف يظهر في Google وعند مشاركة رابطه) — أرسل فقط ما تريد تغييره، و"" يحذف القيمة. ' +
+          'اكتب العنوان والوصف بلغة المتجر: العنوان 30–60 حرفاً (اسم المتجر + ما يبيعه + ميزة، مثل التوصيل لكل الولايات)، ' +
+          'والوصف 70–160 حرفاً يشرح المنتجات ويدعو للشراء. لا تحشو كلمات مفتاحية. ' +
+          'صورة المشاركة رابط https مباشر بمقاس قريب من 1200×630. ' +
+          'رموز التحقق: يقبل الوسم <meta …> كاملاً أو الرمز وحده — لا تخترعها، اطلبها من المستخدم. ' +
+          'allowIndexing=false يخفي المتجر من Google (لمتجر قيد التجهيز فقط).',
+        inputSchema: {
+          storeId: z.string().uuid().describe('معرّف المتجر'),
+          metaTitle: z.string().max(70).optional().describe('عنوان Google (حتى 70 حرفاً، الأفضل 30–60)'),
+          metaDescription: z.string().max(170).optional().describe('وصف Google (حتى 170 حرفاً، الأفضل 70–160)'),
+          keywords: z.string().max(300).optional().describe('كلمات مفتاحية مفصولة بفواصل'),
+          ogImageUrl: z.string().max(500).optional().describe('صورة المشاركة (https) أو "" لحذفها'),
+          googleVerification: z.string().max(300).optional().describe('رمز/وسم Google Search Console'),
+          bingVerification: z.string().max(300).optional().describe('رمز/وسم Bing Webmaster'),
+          allowIndexing: z.boolean().optional().describe('السماح لمحركات البحث بالفهرسة'),
+        },
+      },
+      ({ storeId, ...input }) => toToolResult(() => this.mdstore.updateStoreSeo(apiKey, storeId, input)),
+    );
+
+    server.registerTool(
       'list_landing_pages',
       {
         title: 'عرض صفحات الهبوط',

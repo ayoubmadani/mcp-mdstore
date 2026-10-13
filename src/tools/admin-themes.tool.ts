@@ -162,9 +162,14 @@ export class AdminThemesTool {
       {
         title: 'رفع كود ثيم (أدمن)',
         description:
-          'يرفع كود ثيم: ملف TSX واحد كامل يتبع skill «mdstore-theme-creator» — يستورد فقط من react و next/link و next/navigation ' +
-          'و axios و lucide-react و isomorphic-dompurify و @mdstore/theme-kit (لا @/ ولا ملفات أخرى)، ويصدّر default و Home و Details ' +
-          'و Cart و StaticPage (و Success اختياري). الخادم يفحص الاستيرادات والـ exports، يبنيه، ويرفعه إلى themes/<slug>.js — ' +
+          'يرفع كود ثيم: ملف TSX واحد كامل يتبع skill «mdstore-theme-creator» (اقرأها والقالب المرجعي قبل الكتابة). ' +
+          'الاستيرادات المسموحة فقط: react، react-dom، next/link، next/image، next/navigation، axios، zustand، zustand/middleware، ' +
+          'lucide-react، framer-motion، isomorphic-dompurify، uuid، @mdstore/theme-kit (لا @/ ولا ملفات أخرى). ' +
+          'يصدّر default و Home و Details و Cart و StaticPage (و Success اختياري). ' +
+          'إلزامي: ar/fr/en، الشحن بـ storeId، الإضافات، ولاية واحدة تُختار وتُقفل، نوع التوصيل حسب الولاية (deliveryShown + data-delivery-option). ' +
+          'السرعة: أيقونات lucide بالاسم فقط (لا import * as) فيدمج الخادم المستعمل منها فقط؛ تجنّب framer-motion (ثقيلة) واستعمل CSS؛ ' +
+          'الهيرو وصورة المنتج الرئيسية fetchPriority="high" وباقي الصور loading="lazy"؛ لا حركة infinite أو blur على مساحات كبيرة. ' +
+          'الخادم يفحص الاستيرادات والـ exports، يبنيه (minify)، ويرفعه إلى themes/<slug>.js — ' +
           'وإن فشل يرجع الخطأ ورقم السطر فأصلحه وأعد الرفع (بتحدٍّ جديد). الـ slug يجب أن يكون لثيم موجود (admin_create_theme). ' +
           'خطوات: admin_request_pin ← اطلب الـ PIN من المستخدم ← هذه الأداة مع pin و challenge_token. ' +
           'لا تكتب الكود في رد المحادثة — مرّره هنا مباشرة.',
