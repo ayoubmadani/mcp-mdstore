@@ -49,6 +49,40 @@ export class ManageStoreTool {
     );
 
     server.registerTool(
+      'set_store_active',
+      {
+        title: 'تفعيل أو إيقاف المتجر',
+        description:
+          'يفعّل متجراً (isActive=true) فيظهر للزوار، أو يوقفه (false) فتظهر للزوار صفحة «المتجر غير نشط». ' +
+          'التفعيل يخضع لحد عدد المتاجر النشطة في خطة التاجر. أكّد مع المستخدم قبل إيقاف متجر يعمل.',
+        inputSchema: {
+          storeId: z.string().uuid().describe('معرّف المتجر'),
+          isActive: z.boolean().describe('true = تفعيل، false = إيقاف'),
+        },
+      },
+      ({ storeId, isActive }) => toToolResult(() => this.mdstore.setStoreActive(apiKey, storeId, isActive)),
+    );
+
+    server.registerTool(
+      'upload_image',
+      {
+        title: 'رفع صورة',
+        description:
+          'يرفع صورة أرسلها المستخدم في المحادثة إلى مكتبة صور التاجر (تخزين المنصة) ويرجع رابطها المباشر https. ' +
+          'استعمل الرابط بعدها في update_store (heroImageUrl)، أو صور المنتجات، أو update_store_seo (ogImageUrl). ' +
+          'data: محتوى الصورة كنص base64 (أو data URL). JPEG/PNG/WebP/GIF، حتى ~3MB (حد الطلب 4.5MB بعد base64). ' +
+          'الصورة تُضغط تلقائياً (WebP بعرض 1600 كحد أقصى) وتُحتسب في حد صور الخطة. ' +
+          'folder: products (افتراضي) أو category أو hero أو logo أو favicon.',
+        inputSchema: {
+          data: z.string().min(100).max(4_400_000).describe('الصورة كنص base64 أو data:image/...;base64,...'),
+          folder: z.enum(['products', 'category', 'hero', 'logo', 'favicon']).optional().describe('مجلد مكتبة الصور'),
+          filename: z.string().max(120).optional().describe('اسم وصفي للملف (اختياري)'),
+        },
+      },
+      ({ data, folder, filename }) => toToolResult(() => this.mdstore.uploadImage(apiKey, data, folder, filename)),
+    );
+
+    server.registerTool(
       'get_store_seo',
       {
         title: 'عرض SEO المتجر',
@@ -81,6 +115,22 @@ export class ManageStoreTool {
         },
       },
       ({ storeId, ...input }) => toToolResult(() => this.mdstore.updateStoreSeo(apiKey, storeId, input)),
+    );
+
+    server.registerTool(
+      'set_landing_page_product',
+      {
+        title: 'ربط صفحة هبوط بمنتج',
+        description:
+          'يربط صفحة هبوط بمنتج من نفس المتجر — لصفحة أُنشئت بلا منتج، أو صفحة منتجها محذوف (نموذج الطلب فيها لا يعمل). ' +
+          'يسري فوراً على الصفحة المنشورة بلا إعادة نشر. productId من list_products. ' +
+          'مرفوض إن كانت الصفحة في اختبار A/B قيد التشغيل (كل صفحاته لنفس المنتج) — أوقف الاختبار أولاً بـ update_split_test.',
+        inputSchema: {
+          pageId: z.string().uuid().describe('معرّف صفحة الهبوط (من list_landing_pages)'),
+          productId: z.string().uuid().describe('معرّف المنتج'),
+        },
+      },
+      ({ pageId, productId }) => toToolResult(() => this.mdstore.setLandingPageProduct(apiKey, pageId, productId)),
     );
 
     server.registerTool(

@@ -250,6 +250,45 @@ export class MdstoreClient {
     return this.getStore(apiKey, storeId);
   }
 
+  // صورة يرسلها المستخدم (base64) ← مكتبة صور التاجر في R2 (مضغوطة WebP) ← رابط مباشر
+  async uploadImage(apiKey: string, data: string, folder?: string, filename?: string) {
+    const img = await this.request<any>(apiKey, 'POST', MDSTORE_ROUTES.uploadImageBase64(), defined({ data, folder, filename }));
+    return { id: img.id, url: img.url, folder: img.folder, sizeBytes: img.size, mimeType: img.mimeType };
+  }
+
+  // ربط صفحة هبوط بمنتج (صفحة بلا منتج أو منتجها محذوف)
+  setLandingPageProduct(apiKey: string, pageId: string, productId: string) {
+    return this.request<any>(apiKey, 'PATCH', MDSTORE_ROUTES.landingPageProduct(pageId), { productId });
+  }
+
+  // ─── اختبارات A/B ───
+  async listSplitTests(apiKey: string, storeId: string) {
+    const tests = await this.request<any[]>(apiKey, 'GET', `${MDSTORE_ROUTES.splitTests()}?storeId=${encodeURIComponent(storeId)}`);
+    return tests.map(splitTestView);
+  }
+
+  async createSplitTest(apiKey: string, input: { storeId: string; name: string; domain?: string; variants: { builderPageId: string; weight?: number }[]; domainId?: string }) {
+    if (!input.domain && !input.domainId) throw new Error('حدد domain (دومين جديد) أو domainId (دومين صفحة هبوط موجود)');
+    return splitTestView(await this.request<any>(apiKey, 'POST', MDSTORE_ROUTES.splitTests(), defined({ ...input })));
+  }
+
+  async updateSplitTest(apiKey: string, id: string, input: { name?: string; variants?: { builderPageId: string; weight?: number }[]; isActive?: boolean }) {
+    return splitTestView(await this.request<any>(apiKey, 'PATCH', MDSTORE_ROUTES.splitTest(id), defined({ ...input })));
+  }
+
+  splitTestStats(apiKey: string, id: string) {
+    return this.request<any>(apiKey, 'GET', MDSTORE_ROUTES.splitTestStats(id));
+  }
+
+  async setSplitTestWinner(apiKey: string, id: string, builderPageId: string) {
+    return splitTestView(await this.request<any>(apiKey, 'POST', MDSTORE_ROUTES.splitTestWinner(id), { builderPageId }));
+  }
+
+  // تفعيل أو إيقاف متجر (صريح، لا تبديل)
+  async setStoreActive(apiKey: string, storeId: string, isActive: boolean) {
+    return this.request<any>(apiKey, 'PUT', MDSTORE_ROUTES.storeStatus(storeId), { isActive });
+  }
+
   // SEO المتجر (عنوان/وصف Google، صورة المشاركة، رموز التحقق، الفهرسة)
   async getStoreSeo(apiKey: string, storeId: string) {
     const s = await this.request<any>(apiKey, 'GET', MDSTORE_ROUTES.storeSeo(storeId));
@@ -655,4 +694,16 @@ const seoView = (s: any) => ({
   googleVerification: s?.googleVerification ?? null,
   bingVerification: s?.bingVerification ?? null,
   allowIndexing: s?.allowIndexing !== false,
+});
+
+const splitTestView = (t: any) => ({
+  id: t.id,
+  name: t.name,
+  url: t.url ?? `https://${t.domain}`,
+  domain: t.domain,
+  domainActive: t.domainActive ?? null,
+  isActive: t.isActive,
+  winnerPageId: t.winnerPageId ?? null,
+  variants: (t.variants ?? []).map((v: any) => ({ builderPageId: v.builderPageId, name: v.name, weight: v.weight })),
+  createdAt: t.createdAt,
 });

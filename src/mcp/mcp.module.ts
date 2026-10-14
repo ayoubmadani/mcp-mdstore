@@ -4,6 +4,7 @@ import { CreateLandingPageTool } from '../tools/create-landing-page.tool';
 import { ImportProductFromLinkTool } from '../tools/import-product-from-link.tool';
 import { ManageProductsTool } from '../tools/manage-products.tool';
 import { ManageStoreTool } from '../tools/manage-store.tool';
+import { SplitTestsTool } from '../tools/split-tests.tool';
 import { ManageCategoriesTool } from '../tools/manage-categories.tool';
 import { GenerateProductImagesTool } from '../tools/generate-product-images.tool';
 import { ManageDomainsTool } from '../tools/manage-domains.tool';
@@ -28,6 +29,7 @@ import { McpService } from './mcp.service';
     ImportProductFromLinkTool,
     ManageProductsTool,
     ManageStoreTool,
+    SplitTestsTool,
     ManageCategoriesTool,
     GenerateProductImagesTool,
     ManageDomainsTool,

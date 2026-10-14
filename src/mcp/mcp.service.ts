@@ -7,6 +7,7 @@ import { ListStoresTool } from '../tools/list-stores.tool';
 import { ImportProductFromLinkTool } from '../tools/import-product-from-link.tool';
 import { ManageProductsTool } from '../tools/manage-products.tool';
 import { ManageStoreTool } from '../tools/manage-store.tool';
+import { SplitTestsTool } from '../tools/split-tests.tool';
 import { ManageCategoriesTool } from '../tools/manage-categories.tool';
 import { GenerateProductImagesTool } from '../tools/generate-product-images.tool';
 import { ManageDomainsTool } from '../tools/manage-domains.tool';
@@ -27,6 +28,7 @@ export class McpService {
     private readonly importProductFromLink: ImportProductFromLinkTool,
     private readonly manageProducts: ManageProductsTool,
     private readonly manageStore: ManageStoreTool,
+    private readonly splitTests: SplitTestsTool,
     private readonly manageCategories: ManageCategoriesTool,
     private readonly generateProductImages: GenerateProductImagesTool,
     private readonly manageDomains: ManageDomainsTool,
@@ -49,6 +51,7 @@ export class McpService {
     this.importProductFromLink.register(server, apiKey);
     this.manageProducts.register(server, apiKey);
     this.manageStore.register(server, apiKey);
+    this.splitTests.register(server, apiKey);
     this.manageCategories.register(server, apiKey);
     this.generateProductImages.register(server, apiKey);
     this.manageDomains.register(server, apiKey);

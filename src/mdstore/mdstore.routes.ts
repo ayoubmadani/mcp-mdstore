@@ -9,6 +9,13 @@ export const MDSTORE_ROUTES = {
   apiKeyConnection: () => '/api-keys/connection',
   store: (storeId: string) => `/stores/${encodeURIComponent(storeId)}`,
   storeSeo: (storeId: string) => `/stores/${encodeURIComponent(storeId)}/seo`,
+  storeStatus: (storeId: string) => `/stores/${encodeURIComponent(storeId)}/status`,
+  uploadImageBase64: () => '/images/upload-base64',
+  splitTests: () => '/split-tests',
+  landingPageProduct: (pageId: string) => `/builder-pages/${encodeURIComponent(pageId)}/product`,
+  splitTest: (id: string) => `/split-tests/${encodeURIComponent(id)}`,
+  splitTestStats: (id: string) => `/split-tests/${encodeURIComponent(id)}/stats`,
+  splitTestWinner: (id: string) => `/split-tests/${encodeURIComponent(id)}/winner`,
   products: (storeId: string) => `/stores/${encodeURIComponent(storeId)}/products`,
   product: (storeId: string, productId: string) =>
     `/stores/${encodeURIComponent(storeId)}/products/${encodeURIComponent(productId)}`,
