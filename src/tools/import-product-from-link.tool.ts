@@ -19,7 +19,9 @@ export class ImportProductFromLinkTool {
           'إذا أرسل المستخدم صورة منتج أو وصفاً فقط: ابحث أولاً على الإنترنت عن نفس المنتج في AliExpress ' +
           'واختر رابط صفحة المنتج (aliexpress.com/item/<رقم>.html)، واعرضه على المستخدم للتأكيد. ' +
           'سعر البيع بالدينار الجزائري مطلوب — اسأل المستخدم عنه إن لم يذكره. ' +
-          'استعمل list_stores لمعرفة storeId إن لم يكن معروفاً.',
+          'استعمل list_stores لمعرفة storeId إن لم يكن معروفاً. ' +
+          'للجلب حد يومي حسب خطة المالك (يتجدد منتصف الليل بتوقيت الجزائر): عند الخطأ [ALIEXPRESS_DAILY_LIMIT] ' +
+          'أخبر المستخدم ولا تعِد المحاولة اليوم.',
         inputSchema: {
           storeId: z.string().uuid().describe('معرّف المتجر'),
           url: z.string().url().describe('رابط منتج AliExpress (أو رقم المنتج)'),
