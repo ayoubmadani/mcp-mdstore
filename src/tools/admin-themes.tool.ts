@@ -97,7 +97,7 @@ export class AdminThemesTool {
         title: 'تعديل خطة (أدمن)',
         description:
           'يعدّل خطة اشتراك: الأسعار، التفعيل، و/أو الحدود. features جزئية — يُغيَّر فقط ما تمرّره ' +
-          '(storeNumber، productNumber، productImagesNumber، totalImagesNumber، landingPageNumber، domainNumber، ' +
+          '(storeNumber، productNumber، productImagesNumber، totalImagesNumber، landingPageNumber، domainNumber، maxMembers، ' +
           'pixelFacebookNumber، pixelTiktokNumber، isNtfy، commission). يؤثر على كل المشتركين في الخطة. ' + PIN_HELP,
         inputSchema: {
           planId: z.string().uuid().describe('من admin_list_plans'),
@@ -112,6 +112,7 @@ export class AdminThemesTool {
               totalImagesNumber: z.number().int().min(0).optional(),
               landingPageNumber: z.number().int().min(0).optional(),
               domainNumber: z.number().int().min(0).optional(),
+              maxMembers: z.number().int().min(0).optional().describe('أعضاء الفريق (مستخدمون مختلفون عبر كل متاجر المالك) — 0 = لا مشاركة'),
               pixelFacebookNumber: z.number().int().min(0).optional(),
               pixelTiktokNumber: z.number().int().min(0).optional(),
               isNtfy: z.boolean().optional(),

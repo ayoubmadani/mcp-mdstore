@@ -537,8 +537,20 @@ export class MdstoreClient {
     return this.request(apiKey, 'POST', MDSTORE_ROUTES.productAiImages(storeId, productId), input);
   }
 
-  listStores(apiKey: string) {
-    return this.request(apiKey, 'GET', MDSTORE_ROUTES.listStores());
+  // متاجره + المتاجر المشتركة معه (عضو فريق) — مع دوره وصلاحياته في كل متجر
+  async listStores(apiKey: string) {
+    const res: any = await this.request(apiKey, 'GET', MDSTORE_ROUTES.listStores());
+    const stores: any[] = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+    return stores.map((s) => ({
+      id: s.id,
+      name: s.name,
+      subdomain: s.subdomain,
+      isActive: s.isActive,
+      role: s.role ?? 'owner',
+      ...(s.role === 'member'
+        ? { ownerName: s.ownerName, groupName: s.groupName, permissions: s.permissions ?? [], canUse: s.selectable !== false, reason: s.reason ?? null }
+        : {}),
+    }));
   }
 
   // المتجر يُنشأ أولاً ثم يُطبَّق الثيم — فشل الثيم لا يلغي المتجر، يُرجَع مع الخطأ
@@ -676,10 +688,12 @@ export class MdstoreClient {
 // مصفوفة نصوص (أخطاء التحقق).
 function extractApiMessage(err: unknown): string {
   if (isAxiosError(err)) {
-    const message = (err.response?.data as { message?: unknown } | undefined)
-      ?.message;
-    if (Array.isArray(message)) return message.join('\n');
-    if (typeof message === 'string') return message;
+    const body = err.response?.data as { message?: unknown; code?: unknown } | undefined;
+    const message = body?.message;
+    // رمز رفض الوصول لمتجر مشترك (PERMISSION_DENIED، OWNER_ONLY…) — ليفهم النموذج السبب
+    const code = typeof body?.code === 'string' ? `[${body.code}] ` : '';
+    if (Array.isArray(message)) return code + message.join('\n');
+    if (typeof message === 'string') return code + message;
     if (err.response) return `md-store-api: HTTP ${err.response.status}`;
     return `تعذر الاتصال بـ md-store-api: ${err.message}`;
   }
