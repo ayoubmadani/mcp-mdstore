@@ -11,6 +11,7 @@ import { ManageDomainsTool } from '../tools/manage-domains.tool';
 import { ManageThemesTool } from '../tools/manage-themes.tool';
 import { ManageShippingTool } from '../tools/manage-shipping.tool';
 import { AdminThemesTool } from '../tools/admin-themes.tool';
+import { AdminLocationsTool } from '../tools/admin-locations.tool';
 import { CreateProductTool } from '../tools/create-product.tool';
 import { CreateStoreTool } from '../tools/create-store.tool';
 import { ListStoresTool } from '../tools/list-stores.tool';
@@ -36,6 +37,7 @@ import { McpService } from './mcp.service';
     ManageThemesTool,
     ManageShippingTool,
     AdminThemesTool,
+    AdminLocationsTool,
   ],
 })
 export class McpModule {}

@@ -91,5 +91,44 @@ export class ManageShippingTool {
       },
       ({ profileId, prices }) => toToolResult(() => this.mdstore.updateShippingPrices(apiKey, prices, profileId)),
     );
+
+    server.registerTool(
+      'get_shipping_communes',
+      {
+        title: 'بلديات ولاية في التوصيل',
+        description:
+          'يعرض بلديات ولاية مع حالة التوصيل في كل بلدية داخل حساب الشحن: homeEnabled و officeEnabled ' +
+          '(الاثنان false = البلدية معطّلة ولا تظهر للزبون). restrictedCommunes في get_shipping_prices يعطي عدد البلديات المقيّدة لكل ولاية.',
+        inputSchema: {
+          wilayaId: z.number().int().min(1).describe('رقم الولاية'),
+          profileId: z.string().uuid().optional().describe('معرّف حساب الشحن (الافتراضي إن لم يُحدَّد)'),
+        },
+      },
+      ({ wilayaId, profileId }) => toToolResult(() => this.mdstore.getShippingCommunes(apiKey, wilayaId, profileId)),
+    );
+
+    server.registerTool(
+      'update_shipping_communes',
+      {
+        title: 'تعطيل/تفعيل بلديات',
+        description:
+          'يعطّل بلديات داخل ولاية أو يعيد تفعيلها في حساب شحن. لكل بلدية: homeEnabled و officeEnabled ' +
+          '(false/false = معطّلة كلياً؛ true/true = تتبع إعداد الولاية). يُغيَّر فقط ما تمرّره. ' +
+          'استعمل get_shipping_communes لمعرفة أرقام البلديات. الطلبات إلى بلدية معطّلة تُرفض.',
+        inputSchema: {
+          wilayaId: z.number().int().min(1).describe('رقم الولاية'),
+          profileId: z.string().uuid().optional().describe('معرّف حساب الشحن (الافتراضي إن لم يُحدَّد)'),
+          communes: z
+            .array(z.object({
+              communeId: z.number().int().min(1),
+              homeEnabled: z.boolean(),
+              officeEnabled: z.boolean(),
+            }))
+            .min(1)
+            .max(200),
+        },
+      },
+      ({ wilayaId, profileId, communes }) => toToolResult(() => this.mdstore.updateShippingCommunes(apiKey, wilayaId, communes, profileId)),
+    );
   }
 }

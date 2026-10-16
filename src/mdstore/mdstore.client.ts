@@ -426,6 +426,7 @@ export class MdstoreClient {
       priceHome: Number(w.livraisonHome), priceOffice: Number(w.livraisonOfice),
       priceReturn: Number(w.livraisonReturn), isActive: w.isActive,
       homeEnabled: w.homeEnabled !== false, officeEnabled: w.officeEnabled !== false,
+      restrictedCommunes: Number(w.restrictedCommunes ?? 0),
     }));
   }
 
@@ -437,6 +438,17 @@ export class MdstoreClient {
     });
     await this.request(apiKey, 'POST', `${MDSTORE_ROUTES.updateShippingPrices()}${qs}`, prices);
     return this.getShippingPrices(apiKey, profileId);
+  }
+
+  // بلديات ولاية في حساب شحن (المعطّلة كلياً أو للمنزل/المكتب فقط)
+  getShippingCommunes(apiKey: string, wilayaId: number, profileId?: string) {
+    const qs = profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
+    return this.request(apiKey, 'GET', `${MDSTORE_ROUTES.shippingCommunes(wilayaId)}${qs}`);
+  }
+
+  async updateShippingCommunes(apiKey: string, wilayaId: number, communes: { communeId: number; homeEnabled: boolean; officeEnabled: boolean }[], profileId?: string) {
+    const qs = profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
+    return this.request(apiKey, 'POST', `${MDSTORE_ROUTES.shippingCommunes(wilayaId)}${qs}`, { communes });
   }
 
   /* مدير المنصة (مفتاح mdsa_) */
@@ -475,6 +487,28 @@ export class MdstoreClient {
 
   adminUpdatePlan(apiKey: string, planId: string, changes: Record<string, unknown>, pin: string, challengeToken: string) {
     return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminUpdatePlan(planId), defined({ ...changes, pin, challenge_token: challengeToken }));
+  }
+
+  /* المواقع (خدمة mdstore-locations) */
+  adminListCountries(apiKey: string) {
+    return this.request(apiKey, 'GET', MDSTORE_ROUTES.adminCountries());
+  }
+
+  adminListRegions(apiKey: string, country: string, regionId?: number) {
+    const qs = regionId !== undefined ? `?regionId=${regionId}` : '';
+    return this.request(apiKey, 'GET', `${MDSTORE_ROUTES.adminCountryRegions(country)}${qs}`);
+  }
+
+  adminUpsertCountry(apiKey: string, country: Record<string, unknown>, pin: string, challengeToken: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminCountries(), { ...country, pin, challenge_token: challengeToken });
+  }
+
+  adminSetRegions(apiKey: string, country: string, regions: unknown[], pin: string, challengeToken: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminCountryRegions(country), { regions, pin, challenge_token: challengeToken });
+  }
+
+  adminUpsertRegion(apiKey: string, country: string, region: unknown, pin: string, challengeToken: string) {
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminCountryRegion(country), { region, pin, challenge_token: challengeToken });
   }
 
   adminSetPlanThemes(apiKey: string, planId: string, action: 'add' | 'remove', themeIds: string[], pin: string, challengeToken: string) {
