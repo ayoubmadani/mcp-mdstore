@@ -404,12 +404,14 @@ export class MdstoreClient {
   }
 
   // حسابات الشحن: لكل حساب أسعاره وولاياته، وكل متجر يستعمل حساباً (الافتراضي إن لم يُختر)
-  listShippingProfiles(apiKey: string) {
-    return this.request(apiKey, 'GET', MDSTORE_ROUTES.shippingProfiles());
+  // أدوات التاجر تدعم الجزائر فقط: حسابات الشحن الجزائرية وحدها (الدول الأخرى من لوحة التحكم)
+  async listShippingProfiles(apiKey: string) {
+    const rows = await this.request<any[]>(apiKey, 'GET', MDSTORE_ROUTES.shippingProfiles());
+    return (rows ?? []).filter((p) => (p.country || 'DZ') === 'DZ');
   }
 
   createShippingProfile(apiKey: string, name: string, copyFromId?: string) {
-    return this.request(apiKey, 'POST', MDSTORE_ROUTES.shippingProfiles(), defined({ name, copyFromId }));
+    return this.request(apiKey, 'POST', MDSTORE_ROUTES.shippingProfiles(), defined({ name, copyFromId, country: 'DZ' }));
   }
 
   setStoreShippingProfile(apiKey: string, storeId: string, profileId: string | null) {
@@ -575,7 +577,8 @@ export class MdstoreClient {
   async listStores(apiKey: string) {
     const res: any = await this.request(apiKey, 'GET', MDSTORE_ROUTES.listStores());
     const stores: any[] = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-    return stores.map((s) => ({
+    // الجزائر فقط: متاجر الدول الأخرى تُدار من لوحة التحكم
+    return stores.filter((s) => (s.country || 'DZ') === 'DZ').map((s) => ({
       id: s.id,
       name: s.name,
       subdomain: s.subdomain,
@@ -666,7 +669,9 @@ export class MdstoreClient {
         name: input.name,
         subdomain: input.subdomain,
         language: input.language,
-        currency: input.currency,
+        // MCP ينشئ متاجر جزائرية فقط
+        country: 'DZ',
+        currency: 'DZD',
         cart: input.cart,
         // بدون منتجات وتصنيفات تجريبية — المحتوى الحقيقي يُنشأ بعد المتجر
         skipDemoContent: true,

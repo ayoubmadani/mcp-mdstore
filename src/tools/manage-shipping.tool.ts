@@ -27,7 +27,7 @@ export class ManageShippingTool {
       {
         title: 'إنشاء حساب شحن',
         description:
-          'ينشئ حساب شحن جديداً باسم (مثلاً: أسعار العاصمة) يبدأ بنسخة من أسعار حساب موجود، ' +
+          'ينشئ حساب شحن جزائرياً جديداً باسم (مثلاً: أسعار العاصمة) يبدأ بنسخة من أسعار حساب موجود. أدوات MCP تدعم الجزائر فقط. ' +
           'ثم عدّل أسعاره بـ update_shipping_prices واربطه بمتجر بـ set_store_shipping_profile.',
         inputSchema: {
           name: z.string().min(1).max(80).describe('اسم الحساب'),
@@ -76,7 +76,7 @@ export class ManageShippingTool {
           prices: z
             .array(
               z.object({
-                wilayaId: z.number().int().min(1).describe('رقم الولاية'),
+                wilayaId: z.number().int().min(1).max(58).describe('رقم الولاية الجزائرية (1–58)'),
                 priceHome: z.number().min(0).optional().describe('سعر التوصيل للمنزل (دج)'),
                 priceOffice: z.number().min(0).optional().describe('سعر التوصيل للمكتب (دج)'),
                 priceReturn: z.number().min(0).optional().describe('تكلفة الإرجاع (دج)'),
@@ -86,7 +86,7 @@ export class ManageShippingTool {
               }),
             )
             .min(1)
-            .max(69),
+            .max(58),
         },
       },
       ({ profileId, prices }) => toToolResult(() => this.mdstore.updateShippingPrices(apiKey, prices, profileId)),
@@ -100,7 +100,7 @@ export class ManageShippingTool {
           'يعرض بلديات ولاية مع حالة التوصيل في كل بلدية داخل حساب الشحن: homeEnabled و officeEnabled ' +
           '(الاثنان false = البلدية معطّلة ولا تظهر للزبون). restrictedCommunes في get_shipping_prices يعطي عدد البلديات المقيّدة لكل ولاية.',
         inputSchema: {
-          wilayaId: z.number().int().min(1).describe('رقم الولاية'),
+          wilayaId: z.number().int().min(1).max(58).describe('رقم الولاية الجزائرية (1–58)'),
           profileId: z.string().uuid().optional().describe('معرّف حساب الشحن (الافتراضي إن لم يُحدَّد)'),
         },
       },
@@ -116,7 +116,7 @@ export class ManageShippingTool {
           '(false/false = معطّلة كلياً؛ true/true = تتبع إعداد الولاية). يُغيَّر فقط ما تمرّره. ' +
           'استعمل get_shipping_communes لمعرفة أرقام البلديات. الطلبات إلى بلدية معطّلة تُرفض.',
         inputSchema: {
-          wilayaId: z.number().int().min(1).describe('رقم الولاية'),
+          wilayaId: z.number().int().min(1).max(58).describe('رقم الولاية الجزائرية (1–58)'),
           profileId: z.string().uuid().optional().describe('معرّف حساب الشحن (الافتراضي إن لم يُحدَّد)'),
           communes: z
             .array(z.object({

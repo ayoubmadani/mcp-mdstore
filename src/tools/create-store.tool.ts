@@ -40,7 +40,6 @@ export class CreateStoreTool {
           name: z.string().min(1).describe('اسم المتجر'),
           domain: z.string().min(1).describe('النطاق الفرعي للمتجر، مثل "mystore" (بدون .mdstore.top)'),
           language: z.enum(['ar', 'fr', 'en']).optional().describe('لغة المتجر (الافتراضي ar)'),
-          currency: z.string().optional().describe('العملة (الافتراضي DZD)'),
           primaryColor: hex.optional().describe('اللون الأساسي #RRGGBB'),
           secondaryColor: hex.optional().describe('اللون الثانوي #RRGGBB'),
           heroImageUrl: z.string().url().optional().describe('رابط صورة الهيرو المباشر (https)'),
@@ -87,7 +86,7 @@ export class CreateStoreTool {
             name: input.name,
             subdomain: input.domain,
             language: input.language ?? 'ar',
-            currency: input.currency ?? 'DZD',
+            currency: 'DZD', // متاجر جزائرية فقط
             cart: input.cart,
             design: { primaryColor: input.primaryColor, secondaryColor: input.secondaryColor },
             hero: { imageUrl: input.heroImageUrl, title: input.heroTitle, subtitle: input.heroSubtitle },
