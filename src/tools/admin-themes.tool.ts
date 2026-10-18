@@ -97,7 +97,7 @@ export class AdminThemesTool {
         title: 'تعديل خطة (أدمن)',
         description:
           'يعدّل خطة اشتراك: الأسعار، التفعيل، و/أو الحدود. features جزئية — يُغيَّر فقط ما تمرّره ' +
-          '(storeNumber، productNumber، productImagesNumber، totalImagesNumber، landingPageNumber، domainNumber، maxMembers، aliexpressImportsPerDay، shippingProfileNumber، ' +
+          '(storeNumber، productNumber، productImagesNumber، totalImagesNumber، landingPageNumber، domainNumber، maxMembers، aliexpressImportsPerDay، shippingProfileNumber، imagePagesPerMonth، ' +
           'pixelFacebookNumber، pixelTiktokNumber، isNtfy، commission). يؤثر على كل المشتركين في الخطة. ' + PIN_HELP,
         inputSchema: {
           planId: z.string().uuid().describe('من admin_list_plans'),
@@ -114,6 +114,7 @@ export class AdminThemesTool {
               domainNumber: z.number().int().min(0).optional(),
               maxMembers: z.number().int().min(0).optional().describe('أعضاء الفريق (مستخدمون مختلفون عبر كل متاجر المالك) — 0 = لا مشاركة'),
               shippingProfileNumber: z.number().int().min(1).optional().describe('حسابات الشحن (مجموعات أسعار التوصيل) شاملاً الافتراضي — 1 = الافتراضي فقط'),
+              imagePagesPerMonth: z.number().int().min(0).optional().describe('صفحات الصور بالذكاء الاصطناعي شهرياً — 0 = غير متاحة'),
               aliexpressImportsPerDay: z.number().int().min(0).optional().describe('منتجات يمكن جلبها من AliExpress في اليوم (بتوقيت الجزائر) — 0 = غير متاح'),
               pixelFacebookNumber: z.number().int().min(0).optional(),
               pixelTiktokNumber: z.number().int().min(0).optional(),
