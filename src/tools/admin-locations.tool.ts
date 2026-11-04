@@ -28,6 +28,7 @@ const region = z.object({
   code: z.string().optional().describe('اختياري — يُولَّد تلقائياً مثل DZ-16'),
   name: z.string().min(1),
   ar_name: z.string().min(1),
+  ship_as: z.number().int().min(1).optional().describe('اختياري — رقم الولاية التي تُرسل باسمها لشركة التوصيل (ولاية جديدة تُشحن كولايتها الأم)'),
   localities: z.array(locality).min(1),
 });
 
