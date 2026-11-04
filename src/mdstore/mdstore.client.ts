@@ -496,8 +496,11 @@ export class MdstoreClient {
     return this.request(apiKey, 'GET', MDSTORE_ROUTES.adminCountries());
   }
 
-  adminListRegions(apiKey: string, country: string, regionId?: number) {
-    const qs = regionId !== undefined ? `?regionId=${regionId}` : '';
+  adminListRegions(apiKey: string, country: string, regionId?: number, division?: string) {
+    const q = new URLSearchParams();
+    if (regionId !== undefined) q.set('regionId', String(regionId));
+    if (division) q.set('division', division);
+    const qs = q.toString() ? `?${q}` : '';
     return this.request(apiKey, 'GET', `${MDSTORE_ROUTES.adminCountryRegions(country)}${qs}`);
   }
 
@@ -505,12 +508,12 @@ export class MdstoreClient {
     return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminCountries(), { ...country, pin, challenge_token: challengeToken });
   }
 
-  adminSetRegions(apiKey: string, country: string, regions: unknown[], pin: string, challengeToken: string) {
-    return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminCountryRegions(country), { regions, pin, challenge_token: challengeToken });
+  adminSetRegions(apiKey: string, country: string, regions: unknown[], pin: string, challengeToken: string, division?: string) {
+    return this.request(apiKey, 'POST', `${MDSTORE_ROUTES.adminCountryRegions(country)}${division ? `?division=${encodeURIComponent(division)}` : ''}`, { regions, pin, challenge_token: challengeToken });
   }
 
-  adminUpsertRegion(apiKey: string, country: string, region: unknown, pin: string, challengeToken: string) {
-    return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminCountryRegion(country), { region, pin, challenge_token: challengeToken });
+  adminUpsertRegion(apiKey: string, country: string, region: unknown, pin: string, challengeToken: string, division?: string) {
+    return this.request(apiKey, 'POST', `${MDSTORE_ROUTES.adminCountryRegion(country)}${division ? `?division=${encodeURIComponent(division)}` : ''}`, { region, pin, challenge_token: challengeToken });
   }
 
   adminSetPlanThemes(apiKey: string, planId: string, action: 'add' | 'remove', themeIds: string[], pin: string, challengeToken: string) {

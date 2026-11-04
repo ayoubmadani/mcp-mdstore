@@ -23,6 +23,8 @@ const locality = z.object({
   ar_name: z.string().min(1),
   post_code: z.string().optional(),
 });
+const division = z.string().regex(/^[0-9A-Za-z]{0,8}$/).optional()
+  .describe("تقسيم الدولة: فارغ = الأساسي، '69' = الجزائر 69 ولاية (يجب أن يكون في divisions للدولة)");
 const region = z.object({
   id: z.number().int().min(1).describe('رقم المنطقة الثابت (للجزائر: رقم الولاية 1–58)'),
   code: z.string().optional().describe('اختياري — يُولَّد تلقائياً مثل DZ-16'),
@@ -67,9 +69,9 @@ export class AdminLocationsTool {
       {
         title: 'مناطق دولة (أدمن)',
         description: 'يعرض مناطق دولة (الولايات للجزائر) مع عدد البلديات. مع regionId يرجع منطقة واحدة بكل بلدياتها.',
-        inputSchema: { country, regionId: z.number().int().min(1).optional() },
+        inputSchema: { country, regionId: z.number().int().min(1).optional(), division },
       },
-      ({ country: cc, regionId }) => toToolResult(() => this.mdstore.adminListRegions(apiKey, cc, regionId)),
+      ({ country: cc, regionId, division: d }) => toToolResult(() => this.mdstore.adminListRegions(apiKey, cc, regionId, d)),
     );
 
     server.registerTool(
@@ -89,6 +91,8 @@ export class AdminLocationsTool {
           phone_pattern: z.string().optional().describe('regex للرقم المحلي (اختياري)'),
           levels: z.object({ region: levelNames, locality: levelNames }).describe('أسماء المستويين، مثلاً الجهة/المدينة'),
           active: z.boolean(),
+          divisions: z.array(z.object({ code: z.string().regex(/^[0-9A-Za-z]{0,8}$/), ar: z.string().min(1), fr: z.string().optional(), en: z.string().optional() })).max(10).optional()
+            .describe("تقسيمات الدولة (اختياري): code '' = الأساسي، مثلاً الجزائر [{code:'',ar:'58 ولاية'},{code:'69',ar:'69 ولاية'}]"),
           ...PIN_FIELDS,
         },
       },
@@ -103,11 +107,11 @@ export class AdminLocationsTool {
         description:
           'يضيف منطقة (ولاية) مع كل بلدياتها أو يستبدلها إن كان رقمها موجوداً. الطريقة المفضّلة لبناء دولة منطقةً منطقة. ' +
           'للجزائر: يحدّث أيضاً جدولي الولايات والبلديات في المنصة (إضافة/تحديث بلا حذف). ' + PIN_HELP,
-        inputSchema: { country, region, ...PIN_FIELDS },
+        inputSchema: { country, division, region, ...PIN_FIELDS },
       },
-      ({ country: cc, region: r, pin, challenge_token }) =>
-        withPin('admin_upsert_region', { country: cc, region: { id: r.id, name: r.name, ar_name: r.ar_name, localities: r.localities.length } }, pin, challenge_token,
-          (p, t) => this.mdstore.adminUpsertRegion(apiKey, cc, r, p, t)),
+      ({ country: cc, division: d, region: r, pin, challenge_token }) =>
+        withPin('admin_upsert_region', { country: cc, division: d ?? '', region: { id: r.id, name: r.name, ar_name: r.ar_name, localities: r.localities.length } }, pin, challenge_token,
+          (p, t) => this.mdstore.adminUpsertRegion(apiKey, cc, r, p, t, d)),
     );
 
     server.registerTool(
@@ -117,11 +121,11 @@ export class AdminLocationsTool {
         description:
           'يستبدل كل مناطق دولة وبلدياتها دفعة واحدة (للاستيراد الكامل). يرفض الأرقام المكررة والمناطق بلا بلديات. ' +
           'المنطقة غير الموجودة في القائمة تُحذف من الخدمة — فاستعمله بحذر، و admin_upsert_region للتعديلات الصغيرة. ' + PIN_HELP,
-        inputSchema: { country, regions: z.array(region).min(1), ...PIN_FIELDS },
+        inputSchema: { country, division, regions: z.array(region).min(1), ...PIN_FIELDS },
       },
-      ({ country: cc, regions, pin, challenge_token }) =>
-        withPin('admin_set_country_regions', { country: cc, regions: regions.length, localities: regions.reduce((n, r) => n + r.localities.length, 0) }, pin, challenge_token,
-          (p, t) => this.mdstore.adminSetRegions(apiKey, cc, regions, p, t)),
+      ({ country: cc, division: d, regions, pin, challenge_token }) =>
+        withPin('admin_set_country_regions', { country: cc, division: d ?? '', regions: regions.length, localities: regions.reduce((n, r) => n + r.localities.length, 0) }, pin, challenge_token,
+          (p, t) => this.mdstore.adminSetRegions(apiKey, cc, regions, p, t, d)),
     );
   }
 }
