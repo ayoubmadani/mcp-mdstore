@@ -91,7 +91,7 @@ export class AdminLocationsTool {
           phone_pattern: z.string().optional().describe('regex للرقم المحلي (اختياري)'),
           levels: z.object({ region: levelNames, locality: levelNames }).describe('أسماء المستويين، مثلاً الجهة/المدينة'),
           active: z.boolean(),
-          divisions: z.array(z.object({ code: z.string().regex(/^[0-9A-Za-z]{0,8}$/), ar: z.string().min(1), fr: z.string().optional(), en: z.string().optional() })).max(10).optional()
+          divisions: z.array(z.object({ code: z.string().regex(/^[0-9A-Za-z]{0,8}$/), ar: z.string().min(1), fr: z.string().optional(), en: z.string().optional(), active: z.boolean().optional() })).max(10).optional()
             .describe("تقسيمات الدولة (اختياري): code '' = الأساسي، مثلاً الجزائر [{code:'',ar:'58 ولاية'},{code:'69',ar:'69 ولاية'}]"),
           ...PIN_FIELDS,
         },
