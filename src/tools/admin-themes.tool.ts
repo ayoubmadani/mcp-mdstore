@@ -27,18 +27,6 @@ export class AdminThemesTool {
 
   register(server: McpServer, apiKey: string) {
     server.registerTool(
-      'admin_list_theme_types',
-      {
-        title: 'أنواع الثيمات (أدمن)',
-        description:
-          'يعرض أنواع الثيمات (id والاسم) لاختيار typeId عند إنشاء ثيم. ' +
-          'hidden=true يعني أن ثيمات هذا النوع لا تظهر للتجار في معرض الثيمات (مثل testing و custom) — لا تختره لثيم عادي.',
-        inputSchema: {},
-      },
-      () => toToolResult(() => this.mdstore.adminListThemeTypes(apiKey)),
-    );
-
-    server.registerTool(
       'admin_list_niches',
       {
         title: 'المجالات (أدمن)',
@@ -80,20 +68,22 @@ export class AdminThemesTool {
     server.registerTool(
       'admin_update_theme',
       {
-        title: 'تعديل ثيم: السعر، التفعيل، المجالات (أدمن)',
-        description: 'يغيّر سعر شراء ثيم (دج، 0 = مجاني) و/أو يفعّله أو يعطّله في معرض الثيمات، و/أو مجالاته (من admin_list_niches). ' + PIN_HELP,
+        title: 'تعديل ثيم: السعر، التفعيل، المجالات، التجربة، البريد (أدمن)',
+        description: 'يغيّر سعر شراء ثيم (دج، 0 = مجاني) و/أو يفعّله أو يعطّله، و/أو مجالاته (من admin_list_niches)، و/أو يطلقه من مرحلة التجربة (isTesting=false)، و/أو يخصصه لتاجر ببريده. ' + PIN_HELP,
         inputSchema: {
           themeId: z.string().uuid().describe('من admin_list_themes'),
           price: z.number().min(0).optional().describe('السعر الجديد (دج)'),
           isActive: z.boolean().optional().describe('true لإظهاره في المعرض، false لإخفائه'),
           nicheId: z.string().uuid().nullable().optional().describe('المجال الأساسي (null = عام يناسب كل المجالات)'),
           secondaryNicheIds: z.array(z.string().uuid()).optional().describe('المجالات الثانوية (تستبدل القائمة كلها)'),
+          isTesting: z.boolean().optional().describe('false = إطلاق الثيم للتجار، true = إعادته لمرحلة التجربة (مخفي)'),
+          ownerEmail: z.string().email().nullable().optional().describe('ثيم مخصص لتاجر واحد (بريده)؛ null = للجميع'),
           ...PIN_FIELDS,
         },
       },
-      ({ themeId, price, isActive, nicheId, secondaryNicheIds, pin, challenge_token }) =>
-        withPin('admin_update_theme', { themeId, price, isActive, nicheId, secondaryNicheIds }, pin, challenge_token,
-          (p, t) => this.mdstore.adminUpdateTheme(apiKey, themeId, { price, isActive, nicheId, secondaryNicheIds }, p, t)),
+      ({ themeId, price, isActive, nicheId, secondaryNicheIds, isTesting, ownerEmail, pin, challenge_token }) =>
+        withPin('admin_update_theme', { themeId, price, isActive, nicheId, secondaryNicheIds, isTesting, ownerEmail }, pin, challenge_token,
+          (p, t) => this.mdstore.adminUpdateTheme(apiKey, themeId, { price, isActive, nicheId, secondaryNicheIds, isTesting, ownerEmail }, p, t)),
     );
 
     server.registerTool(
@@ -204,39 +194,6 @@ export class AdminThemesTool {
     );
 
     server.registerTool(
-      'admin_create_theme_type',
-      {
-        title: 'إنشاء نوع ثيم (أدمن)',
-        description:
-          'ينشئ نوع ثيم جديد (فئة نشاط مثل «Food & Restaurants»). استعمله عندما لا يناسب أي نوع موجود في admin_list_theme_types — ' +
-          'تحقق أولاً أنه غير موجود. الاسم بالإنجليزية بصيغة الأنواع الحالية (مثل «Beauty & Cosmetics»). ' +
-          'يحتاج PIN جديداً: استدعِ الأداة أولاً بدون pin و challenge_token فترجع أسماء الرموز، ' +
-          'اطلب الـ PIN من المستخدم (لا تخمّنه)، ثم أعد الاستدعاء مع pin و challenge_token.',
-        inputSchema: {
-          name: z.string().min(1).max(100).describe('اسم النوع بالإنجليزية، مثل: Food & Restaurants'),
-          pin: z.string().regex(/^\d{6}$/).optional().describe('رمز PIN من 6 أرقام يعطيه المستخدم لهذا التحدّي'),
-          challenge_token: z.string().optional().describe('التوكن الذي أرجعته الأداة في الاستدعاء الأول'),
-        },
-      },
-      ({ name, pin, challenge_token }) =>
-        toToolResult(async () => {
-          if (!pin || !challenge_token) {
-            const { label, challenge_token: token } = await this.mdstore.adminPinChallenge(apiKey);
-            return {
-              status: 'pin_required',
-              name,
-              challenge: label,
-              challenge_token: token,
-              instructions:
-                `اطلب من المستخدم رمز PIN للتحدّي ${label} (6 أرقام)، ثم أعد استدعاء admin_create_theme_type ` +
-                'بنفس الاسم مع pin و challenge_token. صالح 5 دقائق.',
-            };
-          }
-          return this.mdstore.adminCreateThemeType(apiKey, name, pin, challenge_token);
-        }),
-    );
-
-    server.registerTool(
       'admin_create_theme',
       {
         title: 'إنشاء ثيم (أدمن)',
@@ -247,7 +204,7 @@ export class AdminThemesTool {
           'وصف تسويقي قصير لكل لغة يذكر النشاط المستهدف، slug إنجليزي بشرطات ينتهي بـ -theme، ' +
           '3 إلى 6 وسوم إنجليزية بشرطات، صورة معاينة من images.unsplash.com تناسب النشاط (بصيغة ?w=800)، ' +
           'و nicheId (المجال الأساسي الذي صُمم له) و secondaryNicheIds (مجالات يناسبها أيضاً) من admin_list_niches — استدعها أولاً؛ ثيم عام لكل المتاجر = بلا nicheId. ' +
-          'typeId اختياري (قديم): لا تستعمله إلا لنوع hidden (testing/custom) لإخفاء الثيم عن التجار. السعر 0 ما لم يحدد المستخدم غيره. ' +
+          'الثيم يُنشأ دائماً غير مفعّل و«في مرحلة التجربة» (مخفي عن التجار)؛ يُطلق لاحقاً من لوحة الأدمن أو بـ admin_update_theme (isTesting=false). السعر 0 ما لم يحدد المستخدم غيره. ' +
           'اعرض الـ JSON على المستخدم قبل طلب الـ PIN. ' +
           'يحتاج PIN جديداً في كل مرة: استدعِ الأداة أولاً بدون pin و challenge_token فترجع أسماء الرموز ' +
           '(مثل ZZMMHH) و challenge_token. اطلب من المستخدم رمز PIN لهذه الأسماء — لا تخمّن الرمز ولا تعِد استعمال رمز سابق — ' +
@@ -269,7 +226,6 @@ export class AdminThemesTool {
           tag: z.array(z.string()).max(8).optional().describe('3-6 وسوم إنجليزية بشرطات، مثل pastry, sweets, warm-colors'),
           nicheId: z.string().uuid().optional().describe('المجال الأساسي (من admin_list_niches)؛ بلا = ثيم عام'),
           secondaryNicheIds: z.array(z.string().uuid()).optional().describe('مجالات ثانوية يناسبها الثيم أيضاً'),
-          typeId: z.string().uuid().optional().describe('اختياري/قديم — فقط لنوع hidden (من admin_list_theme_types)'),
           pin: z.string().regex(/^\d{6}$/).optional().describe('رمز PIN من 6 أرقام يعطيه المستخدم لهذا التحدّي'),
           challenge_token: z.string().optional().describe('التوكن الذي أرجعته الأداة في الاستدعاء الأول'),
         },

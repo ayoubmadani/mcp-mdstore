@@ -36,7 +36,6 @@ export interface AdminThemeInput {
   desc_fr: string;
   imageUrl: string;
   tag?: string[];
-  typeId?: string;
   // المجال الأساسي (null/غائب = عام) والمجالات الثانوية — من admin_list_niches
   nicheId?: string | null;
   secondaryNicheIds?: string[];
@@ -486,7 +485,7 @@ export class MdstoreClient {
     return this.request<any[]>(apiKey, 'GET', MDSTORE_ROUTES.adminNiches());
   }
 
-  adminUpdateTheme(apiKey: string, themeId: string, changes: { price?: number; isActive?: boolean; nicheId?: string | null; secondaryNicheIds?: string[] }, pin: string, challengeToken: string) {
+  adminUpdateTheme(apiKey: string, themeId: string, changes: { price?: number; isActive?: boolean; nicheId?: string | null; secondaryNicheIds?: string[]; isTesting?: boolean; ownerEmail?: string | null }, pin: string, challengeToken: string) {
     return this.request(apiKey, 'POST', MDSTORE_ROUTES.adminUpdateTheme(themeId), defined({ ...changes, pin, challenge_token: challengeToken }));
   }
 
