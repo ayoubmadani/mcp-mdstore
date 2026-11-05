@@ -38,6 +38,19 @@ export class AdminThemesTool {
       () => toToolResult(() => this.mdstore.adminListThemeTypes(apiKey)),
     );
 
+    server.registerTool(
+      'admin_list_niches',
+      {
+        title: 'المجالات (أدمن)',
+        description:
+          'يعرض المجالات المترجمة (id، slug، أيقونة، الاسم بالعربية والفرنسية والإنجليزية). ' +
+          'كل ثيم له مجال أساسي واحد (nicheId، أو بلا مجال = «عام» يناسب كل المتاجر) ومجالات ثانوية يناسبها أيضاً (secondaryNicheIds، بلا حد). ' +
+          'التاجر يرى أولاً الثيمات المصممة لمجال متجره ثم التي تناسبه، فاختر بدقة.',
+        inputSchema: {},
+      },
+      () => toToolResult(() => this.mdstore.adminListNiches(apiKey)),
+    );
+
     // خطوتان: بدون PIN ← تحدٍّ (والتغيير المطلوب للعرض)، ومع PIN ← تنفيذ
     const withPin = (tool: string, preview: unknown, pin: string | undefined, token: string | undefined, run: (pin: string, token: string) => Promise<unknown>) =>
       toToolResult(async () => {
@@ -67,18 +80,20 @@ export class AdminThemesTool {
     server.registerTool(
       'admin_update_theme',
       {
-        title: 'تعديل سعر/تفعيل ثيم (أدمن)',
-        description: 'يغيّر سعر شراء ثيم (دج، 0 = مجاني) و/أو يفعّله أو يعطّله في معرض الثيمات. ' + PIN_HELP,
+        title: 'تعديل ثيم: السعر، التفعيل، المجالات (أدمن)',
+        description: 'يغيّر سعر شراء ثيم (دج، 0 = مجاني) و/أو يفعّله أو يعطّله في معرض الثيمات، و/أو مجالاته (من admin_list_niches). ' + PIN_HELP,
         inputSchema: {
           themeId: z.string().uuid().describe('من admin_list_themes'),
           price: z.number().min(0).optional().describe('السعر الجديد (دج)'),
           isActive: z.boolean().optional().describe('true لإظهاره في المعرض، false لإخفائه'),
+          nicheId: z.string().uuid().nullable().optional().describe('المجال الأساسي (null = عام يناسب كل المجالات)'),
+          secondaryNicheIds: z.array(z.string().uuid()).optional().describe('المجالات الثانوية (تستبدل القائمة كلها)'),
           ...PIN_FIELDS,
         },
       },
-      ({ themeId, price, isActive, pin, challenge_token }) =>
-        withPin('admin_update_theme', { themeId, price, isActive }, pin, challenge_token,
-          (p, t) => this.mdstore.adminUpdateTheme(apiKey, themeId, { price, isActive }, p, t)),
+      ({ themeId, price, isActive, nicheId, secondaryNicheIds, pin, challenge_token }) =>
+        withPin('admin_update_theme', { themeId, price, isActive, nicheId, secondaryNicheIds }, pin, challenge_token,
+          (p, t) => this.mdstore.adminUpdateTheme(apiKey, themeId, { price, isActive, nicheId, secondaryNicheIds }, p, t)),
     );
 
     server.registerTool(
@@ -231,7 +246,8 @@ export class AdminThemesTool {
           'اسم جذاب بالعربية والفرنسية والإنجليزية بصيغة «قالب …» / «Thème …» / «… Theme»، ' +
           'وصف تسويقي قصير لكل لغة يذكر النشاط المستهدف، slug إنجليزي بشرطات ينتهي بـ -theme، ' +
           '3 إلى 6 وسوم إنجليزية بشرطات، صورة معاينة من images.unsplash.com تناسب النشاط (بصيغة ?w=800)، ' +
-          'و typeId الأقرب من admin_list_theme_types (استدعها أولاً؛ تجنّب الأنواع hidden، وإن لم يناسب أي نوع اقترح إنشاء واحد بـ admin_create_theme_type). السعر 0 ما لم يحدد المستخدم غيره. ' +
+          'و nicheId (المجال الأساسي الذي صُمم له) و secondaryNicheIds (مجالات يناسبها أيضاً) من admin_list_niches — استدعها أولاً؛ ثيم عام لكل المتاجر = بلا nicheId. ' +
+          'typeId اختياري (قديم): لا تستعمله إلا لنوع hidden (testing/custom) لإخفاء الثيم عن التجار. السعر 0 ما لم يحدد المستخدم غيره. ' +
           'اعرض الـ JSON على المستخدم قبل طلب الـ PIN. ' +
           'يحتاج PIN جديداً في كل مرة: استدعِ الأداة أولاً بدون pin و challenge_token فترجع أسماء الرموز ' +
           '(مثل ZZMMHH) و challenge_token. اطلب من المستخدم رمز PIN لهذه الأسماء — لا تخمّن الرمز ولا تعِد استعمال رمز سابق — ' +
@@ -251,7 +267,9 @@ export class AdminThemesTool {
           desc_fr: z.string().min(1).describe('وصف تسويقي قصير بالفرنسية'),
           imageUrl: z.string().url().describe('صورة معاينة من images.unsplash.com تناسب النشاط'),
           tag: z.array(z.string()).max(8).optional().describe('3-6 وسوم إنجليزية بشرطات، مثل pastry, sweets, warm-colors'),
-          typeId: z.string().uuid().describe('نوع الثيم (من admin_list_theme_types)'),
+          nicheId: z.string().uuid().optional().describe('المجال الأساسي (من admin_list_niches)؛ بلا = ثيم عام'),
+          secondaryNicheIds: z.array(z.string().uuid()).optional().describe('مجالات ثانوية يناسبها الثيم أيضاً'),
+          typeId: z.string().uuid().optional().describe('اختياري/قديم — فقط لنوع hidden (من admin_list_theme_types)'),
           pin: z.string().regex(/^\d{6}$/).optional().describe('رمز PIN من 6 أرقام يعطيه المستخدم لهذا التحدّي'),
           challenge_token: z.string().optional().describe('التوكن الذي أرجعته الأداة في الاستدعاء الأول'),
         },

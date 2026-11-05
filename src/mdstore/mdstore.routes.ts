@@ -46,6 +46,7 @@ export const MDSTORE_ROUTES = {
   // أدوات مدير المنصة — بمفتاح mdsa_ فقط، والتعديل بـ PIN في كل عملية
   adminPinChallenge: () => '/admin-mcp/pin-challenge',
   adminThemeTypes: () => '/admin-mcp/theme-types',
+  adminNiches: () => '/admin-mcp/niches',
   adminCreateTheme: () => '/admin-mcp/themes',
   adminPublishThemeCode: () => '/admin-mcp/theme-code',
   adminThemes: () => '/admin-mcp/themes',
